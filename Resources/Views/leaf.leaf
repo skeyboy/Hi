@@ -1,0 +1,7 @@
+<html>
+<body>
+#for(header in headers){
+<li>#(header.name) : #(header.value)</li>
+}
+</body>
+<html>
