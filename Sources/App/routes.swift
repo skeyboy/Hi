@@ -11,7 +11,7 @@ public func routes(_ router: Router) throws {
     
     
     // Basic "Hello, world!" example
-  
+    
     router.get("hello") { req in
         return "Hello, world!"
     }
@@ -27,8 +27,8 @@ public func routes(_ router: Router) throws {
     
     router.get("hi", use: hi.greet)
     router.get("users",Int.parameter,"name",String.parameter) { (req) -> String in
-       let result = req.parameters.values.map({ (p) -> String in
-        return "#\(p.slug) \(p.value)"
+        let result = req.parameters.values.map({ (p) -> String in
+            return "#\(p.slug) \(p.value)"
         })
         let id = try req.parameters.next(Int.self)
         let name = try req.parameters.next(String.self)
@@ -51,8 +51,8 @@ public func routes(_ router: Router) throws {
         
         headers.headers.append(contentsOf: headList)
         
-      return  try req.view().render("leaf", headers)
-//        return try   req.view().render("leaf", userInfo: ["headers": SolarSystem() ])
+        return  try req.view().render("leaf", headers)
+        //        return try   req.view().render("leaf", userInfo: ["headers": SolarSystem() ])
     }
     
     router.get("embed") { (req) -> Future<View> in
@@ -60,24 +60,24 @@ public func routes(_ router: Router) throws {
         return try! req.view().render("child", ["title":"Hello "] )
     }
     
-   
+    
     router.post("users") { (req) -> Future<User> in
-       print(req.response().http.headers)
+        print(req.response().http.headers)
         return try! req.content.decode(User.self, maxSize: 1024 * 1024 * 100 ).map(to: User.self, { (user) -> User in
             print(user.name) // "Vapor"
             print(user.age) // 3
             print(user.image) // Raw image data
-          let path =  try req.sharedContainer.make(DirectoryConfig.self).workDir + "Public/"
+            let path =  try req.sharedContainer.make(DirectoryConfig.self).workDir + "Public/"
             do{
-           try user.image.write(to: URL(fileURLWithPath: path+user.name+".png"))
+                try user.image.write(to: URL(fileURLWithPath: path+user.name+".png"))
             } catch{
                 
             }
             return user
-//            return .ok
+            //            return .ok
         })
     }
-   
+    
     
     router.grouped("sessions").grouped(SessionsMiddleware.self).get("foo") { (req) -> String in
         try! req.session()["name"] = UUID.init(uuidString: "d")?.uuidString
@@ -85,7 +85,7 @@ public func routes(_ router: Router) throws {
         return try! req.session()["name"] ?? ""
     }
     
-//    Decode
+    //    Decode
     router.post("login") { (req) -> Future<HTTPStatus> in
         return try! req.content.decode(LoginRequest.self).map({ (login) -> HTTPStatus in
             
@@ -97,7 +97,7 @@ public func routes(_ router: Router) throws {
         
         print("\(login.email) \(login.password)")
         return login
-//        return HTTPStatus.ok
+        //        return HTTPStatus.ok
     }
     
     router.post("app") { (req) -> Future<HTTPStatus> in
@@ -110,41 +110,58 @@ public func routes(_ router: Router) throws {
     router.get("user") { (req) -> User in
         let user: User = try! req.query.decode(User.self)
         try! req.content.encode(user, as: MediaType.urlEncodedForm)
-                return user
+        return user
         
         
     }
     
+    router.get("regist") { (req) ->  EventLoopFuture<String> in
+        
+       
+     let user =  try!  req.query.decode(InnerUser.self)
+
+         let skUser: SKUser = SKUser.init(name: user.name, email: user.email, password: user.password)
+        return  SKUser.query(on: req).filter(\SKUser.email, .equal,try! MD5.hash(skUser.email).base64EncodedString() ).first().flatMap({ (u) -> EventLoopFuture<String> in
+            if u != nil {
+                return   u!.save(on: req).map({ (x) -> String in
+                    return "\(x)"
+                })
+            }else {
+                let r =   req.eventLoop.newPromise(String.self)
+                 r.succeed(result: "邮箱已存在")
+                return r.futureResult
+            }
+        })
+    }
     
-   
     router.get("email", String.parameter) { req -> EventLoopFuture<HTTPResponseStatus> in
         
         
         let smtp: SMTP = SMTP.init(hostname: "smtp.163.com", email: "lylapp@163.com", password: "301324lee")
-      let fromUser =  Mail.User(name: "注册码确认邮件", email: "lylapp@163.com")
+        let fromUser =  Mail.User(name: "注册码确认邮件", email: "lylapp@163.com")
         let email = try req.parameters.next(String.self)
         let toUser = Mail.User.init(email: email)
         
-let mail = Mail(from: fromUser
-    , to: [toUser]
-    , cc: [], bcc: []
-    , subject: "欢迎®️"
-    , text: "您的注册码是\(VerfiyCodeRender.renderInstance.default)"
-    , attachments: []
-    , additionalHeaders: [:])
+        let mail = Mail(from: fromUser
+            , to: [toUser]
+            , cc: [], bcc: []
+            , subject: "欢迎®️"
+            , text: "您的注册码是\(VerfiyCodeRender.renderInstance.default)"
+            , attachments: []
+            , additionalHeaders: [:])
         
         let result = req.eventLoop.newPromise(Bool.self)
         
         smtp.send(mail, completion: { (error) in
             print(error as Any)
-               result.succeed(result: error == nil)
+            result.succeed(result: error == nil)
             
         })
-//        HTTPResponseStatus
-     return   result.futureResult.map({ (b) -> HTTPResponseStatus in
-        return b ? .ok : .expectationFailed
+        //        HTTPResponseStatus
+        return   result.futureResult.map({ (b) -> HTTPResponseStatus in
+            return b ? .ok : .expectationFailed
         })
-   
+        
     }
     
     router.get("app") { (req) -> Future<HTTPStatus> in
@@ -157,6 +174,16 @@ let mail = Mail(from: fromUser
     }
     
 }
+
+struct InnerUser: Content{
+    var name: String
+    var email: String
+    var password:String
+                static var defaultContentType: MediaType{
+                    return .urlEncodedForm
+                }
+}
+
 struct User: Content {
     var name: String
     var age: Int

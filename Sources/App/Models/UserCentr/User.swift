@@ -9,7 +9,7 @@ import Foundation
 import FluentSQLite
 import Vapor
 import SQLite
-
+import Crypto
 /// 会员的状态
 ///
 /// - ok: 正常
@@ -28,13 +28,27 @@ enum SKUserStatus: Int{
 struct SKUser: SQLiteModel {
     var id: Int?
     var name: String
-    var createDate: Date = Date.init()
-    var updateDate: Date = Date.init()
+    var createDate: TimeInterval?
+    var updateDate: TimeInterval? 
     var email: String
-    var password:String?
+    var password:String
     
     /// 默认会发邮件点击d链接完成确认
-    var status: Int = SKUserStatus.unidentified.rawValue
+    var status: Int? = SKUserStatus.unidentified.rawValue
+    init(name: String, email: String, password: String) {
+        self.name = name
+        
+        self.email = try! MD5.hash(email).base64EncodedString()
+        self.password = try! MD5.hash(password).base64EncodedString()
+        self.createDate = Date().timeIntervalSince1970
+        self.updateDate = self.createDate
+    }
+}
+extension SKUser: All{
+    static var defaultContentType: MediaType {
+        return .json
+    }
+
 }
 
 

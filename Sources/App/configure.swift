@@ -57,7 +57,7 @@ public func configure(_ config: inout Config, _ env: inout Environment, _ servic
     
     migrations.add(model: PlanetTag.self, database: .sqlite)
     migrations.add(model: Tag.self, database: .sqlite)
-    
+    migrations.add(model: SKUser.self, database: .sqlite)
     services.register(migrations)
 
     
