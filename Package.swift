@@ -12,10 +12,13 @@ let package = Package(
         
         .package(url: "https://github.com/vapor/leaf.git", from: "3.0.1"),
         .package(url: "https://github.com/vapor/multipart.git", from: "3.0.0"),
+        .package(url: "https://github.com/vapor/auth.git", from: "2.0.0"),
+        /// mail Server
+        .package(url: "https://github.com/IBM-Swift/Swift-SMTP.git", from: "4.0.1"),
 
         ],
     targets: [
-        .target(name: "App", dependencies: ["FluentSQLite", "Vapor","Leaf","Multipart"]),
+        .target(name: "App", dependencies: ["FluentSQLite","Authentication","SwiftSMTP", "Vapor","Leaf","Multipart"]),
         .target(name: "Run", dependencies: ["App"]),
         .testTarget(name: "AppTests", dependencies: ["App"])
     ]

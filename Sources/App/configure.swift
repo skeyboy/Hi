@@ -1,8 +1,19 @@
 import FluentSQLite
 import Vapor
 import Leaf
+import Authentication
+
 /// Called before your application initializes.
 public func configure(_ config: inout Config, _ env: inout Environment, _ services: inout Services) throws {
+    
+    //configure.swift  func configure
+    var nioServerConfig = NIOServerConfig.default()
+    //修改为 4MB
+    nioServerConfig.maxBodySize = 4 * 1024 * 1024
+    services.register(nioServerConfig)
+    
+    // register Authentication provider
+    try services.register(AuthenticationProvider())
     /// Register providers first
     try services.register(FluentSQLiteProvider())
 
@@ -12,11 +23,20 @@ public func configure(_ config: inout Config, _ env: inout Environment, _ servic
     try sql_routes(router)
     services.register(router, as: Router.self)
 
+    
+    config.prefer(MemoryKeyedCache.self, for: KeyedCache.self)
+    
     /// Register middleware
     var middlewares = MiddlewareConfig() // Create _empty_ middleware config
     /// middlewares.use(FileMiddleware.self) // Serves files from `Public/` directory
     middlewares.use(ErrorMiddleware.self) // Catches errors and converts to HTTP response
+    try services.register(SessionsMiddleware.self)
+
+    
+    
     services.register(middlewares)
+    
+    
 
     // Configure a SQLite database
 //    let sqlite = try SQLiteDatabase(storage: .memory)
@@ -30,6 +50,14 @@ public func configure(_ config: inout Config, _ env: inout Environment, _ servic
     /// Configure migrations
     var migrations = MigrationConfig()
     migrations.add(model: Todo.self, database: .sqlite)
+    
+    migrations.add(model: Galaxy.self, database: .sqlite)
+    
+    migrations.add(model: Planet.self, database: .sqlite)
+    
+    migrations.add(model: PlanetTag.self, database: .sqlite)
+    migrations.add(model: Tag.self, database: .sqlite)
+    
     services.register(migrations)
 
     

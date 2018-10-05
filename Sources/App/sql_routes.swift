@@ -13,7 +13,7 @@ func sql_routes(_ router: Router) throws -> Void {
         let version: String
     }
     
-    router.get("sql") { (req) -> EventLoopFuture<String> in
+    router.get("sqllite") { (req) -> EventLoopFuture<String> in
         
         let result =  req.withPooledConnection(to: DatabaseIdentifier<SQLiteDatabase>.sqlite, closure: { (conn:SQLiteConnection) -> EventLoopFuture<[SQLiteVersion]> in
             return   conn.select().column(GenericSQLExpression.function("sqlite_version"), as: GenericSQLIdentifier.init("version")).all(decoding:SQLiteVersion.self)
@@ -22,5 +22,25 @@ func sql_routes(_ router: Router) throws -> Void {
         return   result.map({ (rows) -> String in
             return rows[0].version
         })
+    }
+    
+    struct User: SQLTable, Codable, Content {
+        static let sqlTableIdentifierString: String = "users"
+        let id: Int?
+        let name: String
+    }
+    
+    router.get("nsql") { (req) -> EventLoopFuture<Array<User>> in
+        
+    let result =    req.withPooledConnection(to: DatabaseIdentifier<SQLiteDatabase>.sqlite,
+                                 closure: { (conn) -> EventLoopFuture<[User]> in
+                                    let users =  conn.select()
+                                        .all().from(User.self)
+                                        .where(\User.name=="Vapor")
+                                        .all(decoding: User.self)
+                                    
+                                    return users
+        })
+        return result
     }
 }

@@ -1,7 +1,15 @@
 import Vapor
 import Leaf
+import Authentication
+import SwiftSMTP
+import SQLite
+import DatabaseKit
+
 /// Register your application's routes here.
 public func routes(_ router: Router) throws {
+    
+    
+    
     // Basic "Hello, world!" example
   
     router.get("hello") { req in
@@ -51,26 +59,25 @@ public func routes(_ router: Router) throws {
         return try! req.view().render("child", userInfo: ["title":"Hello","list":["23","2332"]])
         return try! req.view().render("child", ["title":"Hello "] )
     }
-    struct User: Content {
-        var name: String
-        var age: Int
-        var image: Data
-    }
-    router.post("users") { (req) -> Future<HTTPStatus> in
-       
-        return try! req.content.decode(User.self).map(to: HTTPStatus.self, { (user) -> HTTPStatus in
+    
+   
+    router.post("users") { (req) -> Future<User> in
+       print(req.response().http.headers)
+        return try! req.content.decode(User.self, maxSize: 1024 * 1024 * 100 ).map(to: User.self, { (user) -> User in
             print(user.name) // "Vapor"
             print(user.age) // 3
             print(user.image) // Raw image data
-            return .ok
+          let path =  try req.sharedContainer.make(DirectoryConfig.self).workDir + "Public/"
+            do{
+           try user.image.write(to: URL(fileURLWithPath: path+user.name+".png"))
+            } catch{
+                
+            }
+            return user
+//            return .ok
         })
     }
-    router.get("multipart") { (req) -> User in
-        let res = req.response()
-        let user = User(name: "Vapor", age: 12, image: Data())
-       try! res.content.encode(user, as: MediaType.multipart)
-        return user
-    }
+   
     
     router.grouped("sessions").grouped(SessionsMiddleware.self).get("foo") { (req) -> String in
         try! req.session()["name"] = UUID.init(uuidString: "d")?.uuidString
@@ -93,6 +100,13 @@ public func routes(_ router: Router) throws {
 //        return HTTPStatus.ok
     }
     
+    router.post("app") { (req) -> Future<HTTPStatus> in
+        return try req.content.decode(History.self).map(to: HTTPStatus.self, { (history) -> HTTPStatus in
+            
+            
+            return .ok
+        })
+    }
     router.get("user") { (req) -> User in
         let user: User = try! req.query.decode(User.self)
         try! req.content.encode(user, as: MediaType.urlEncodedForm)
@@ -102,7 +116,51 @@ public func routes(_ router: Router) throws {
     }
     
     
+   
+    router.get("email", String.parameter) { req -> EventLoopFuture<HTTPResponseStatus> in
+        
+        
+        let smtp: SMTP = SMTP.init(hostname: "smtp.163.com", email: "lylapp@163.com", password: "301324lee")
+      let fromUser =  Mail.User(name: "注册码确认邮件", email: "lylapp@163.com")
+        let email = try req.parameters.next(String.self)
+        let toUser = Mail.User.init(email: email)
+        
+let mail = Mail(from: fromUser
+    , to: [toUser]
+    , cc: [], bcc: []
+    , subject: "欢迎®️"
+    , text: "您的注册码是\(VerfiyCodeRender.renderInstance.default)"
+    , attachments: []
+    , additionalHeaders: [:])
+        
+        let result = req.eventLoop.newPromise(Bool.self)
+        
+        smtp.send(mail, completion: { (error) in
+            print(error as Any)
+               result.succeed(result: error == nil)
+            
+        })
+//        HTTPResponseStatus
+     return   result.futureResult.map({ (b) -> HTTPResponseStatus in
+        return b ? .ok : .expectationFailed
+        })
+   
+    }
     
+    router.get("app") { (req) -> Future<HTTPStatus> in
+        return try req.content.decode(User.self).map(to: HTTPStatus.self) { user in
+            print(user.name) // "Vapor"
+            print(user.age) // 3
+            print(user.image) // Raw image data
+            return .ok
+        }
+    }
     
 }
-
+struct User: Content {
+    var name: String
+    var age: Int
+    var path: String
+    var image: Data
+    static var defaultContentType: MediaType  = .formData
+}
