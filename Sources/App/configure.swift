@@ -8,8 +8,8 @@ public func configure(_ config: inout Config, _ env: inout Environment, _ servic
     
     //configure.swift  func configure
     var nioServerConfig = NIOServerConfig.default()
-    //修改为 4MB
-    nioServerConfig.maxBodySize = 4 * 1024 * 1024
+    //修改为 100 MB
+    nioServerConfig.maxBodySize = 100 * 1024 * 1024
     services.register(nioServerConfig)
     
     // register Authentication provider

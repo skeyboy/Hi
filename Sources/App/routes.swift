@@ -60,16 +60,21 @@ public func routes(_ router: Router) throws {
         return try! req.view().render("child", ["title":"Hello "] )
     }
     
+    router.get("regist", use: SKUserController().regist)
     
     router.post("users") { (req) -> Future<User> in
-        print(req.response().http.headers)
-        return try! req.content.decode(User.self, maxSize: 1024 * 1024 * 100 ).map(to: User.self, { (user) -> User in
+        print( req.http.headers.firstValue(name: HTTPHeaderName.contentDisposition))
+        print(req.http.contentType)
+        return try! req.content.decode(User.self ).map(to: User.self, { (user) -> User in
             print(user.name) // "Vapor"
             print(user.age) // 3
             print(user.image) // Raw image data
+           
             let path =  try req.sharedContainer.make(DirectoryConfig.self).workDir + "Public/"
             do{
-                try user.image.write(to: URL(fileURLWithPath: path+user.name+".png"))
+                try user.image.write(to: URL(fileURLWithPath: path+user.name + "\(Date().timeIntervalSince1970)" +  user.imageType.type))
+                    
+               
             } catch{
                 
             }
@@ -115,6 +120,7 @@ public func routes(_ router: Router) throws {
         
     }
     
+    /*
     router.get("regist") { (req) ->  EventLoopFuture<String> in
         struct InnerUser: Content{
             var name: String
@@ -146,54 +152,9 @@ public func routes(_ router: Router) throws {
                 }
             })
     }
-    
-    router.get("email") { req -> EventLoopFuture<String> in
-        struct Email: Content {
-            var email: String
-        }
-        let email: Email = try req.query.decode(Email.self)
-        
-        return    SKRegistVerfiy.query(on: req).filter(\.email, .equal, email.email).first().flatMap({ (verfiy) -> EventLoopFuture<String> in
-            
-            
-            if let v = verfiy {//已经存在
-                let result = req.eventLoop.newPromise(String.self)
-                
-                result.succeed(result: v.emailExistMessage)
-                return result.futureResult
-                
-            }else{
-                
-                let reg =  SKRegistVerfiy.init(email: email.email)
-                return  reg.save(on: req).flatMap({ (skVer) -> EventLoopFuture<String> in
-                    
-                    let smtp: SMTP = SMTP.init(hostname: "smtp.163.com", email: "lylapp@163.com", password: "301324lee")
-                    let fromUser =  Mail.User(name: "注册码确认邮件", email: "lylapp@163.com")
-                    let email = skVer.email
-                    let toUser = Mail.User.init(email: email)
-                    
-                    let mail = Mail(from: fromUser
-                        , to: [toUser]
-                        , cc: [], bcc: []
-                        , subject: "欢迎®️"
-                        , text: skVer.message
-                        , attachments: []
-                        , additionalHeaders: [:])
-                    let result = req.eventLoop.newPromise(String.self)
-                    
-                    smtp.send(mail, completion: { (error) in
-                        print(error as Any)
-                        if let error = error {
-                            result.fail(error: error)
-                        }else{
-                            result.succeed(result: skVer.message)
-                        }
-                    })
-                    return result.futureResult
-                })
-            }
-        })
-    }
+    */
+    router.get("email", use: SKUserController().sendCode)
+
     
     router.get("app") { (req) -> Future<HTTPStatus> in
         return try req.content.decode(User.self).map(to: HTTPStatus.self) { user in
@@ -211,7 +172,26 @@ public func routes(_ router: Router) throws {
 struct User: Content {
     var name: String
     var age: Int
-    var path: String
+//    var path: String
     var image: Data
+    var imageType: Int
     static var defaultContentType: MediaType  = .formData
+}
+extension Int{
+    var type: String{
+        switch self {
+        case 0:
+            return ".ipa"
+        case 1:
+            return ".apk"
+        case 2:
+            return ".dmg"
+        case 3:
+            return ".png"
+        case 4:
+            return ".mov"
+        default:
+            return ".txt"
+        }
+    }
 }
