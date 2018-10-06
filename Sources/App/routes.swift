@@ -116,52 +116,83 @@ public func routes(_ router: Router) throws {
     }
     
     router.get("regist") { (req) ->  EventLoopFuture<String> in
-        
-       
-     let user =  try!  req.query.decode(InnerUser.self)
-
-         let skUser: SKUser = SKUser.init(name: user.name, email: user.email, password: user.password)
-        return  SKUser.query(on: req).filter(\SKUser.email, .equal,try! MD5.hash(skUser.email).base64EncodedString() ).first().flatMap({ (u) -> EventLoopFuture<String> in
-            if u != nil {
-                return   u!.save(on: req).map({ (x) -> String in
-                    return "\(x)"
-                })
-            }else {
-                let r =   req.eventLoop.newPromise(String.self)
-                 r.succeed(result: "邮箱已存在")
-                return r.futureResult
+        struct InnerUser: Content{
+            var name: String
+            var email: String
+            var password:String
+            static var defaultContentType: MediaType{
+                return .urlEncodedForm
             }
-        })
+        }
+        
+        let user =  try!  req.query.decode(InnerUser.self)
+        
+        let skUser: SKUser = SKUser.init(name: user.name, email: user.email, password: user.password)
+        
+        return  SKUser.query(on: req)
+            .filter(\SKUser.email,
+                    .equal,
+                    try! MD5.hash(skUser.email).base64EncodedString() )
+            .first()
+            .flatMap({ (u) -> EventLoopFuture<String> in
+                if u != nil {
+                    return   u!.save(on: req).map({ (x) -> String in
+                        return "\(x)"
+                    })
+                }else {
+                    let r =   req.eventLoop.newPromise(String.self)
+                    r.succeed(result: "邮箱已存在")
+                    return r.futureResult
+                }
+            })
     }
     
-    router.get("email", String.parameter) { req -> EventLoopFuture<HTTPResponseStatus> in
+    router.get("email") { req -> EventLoopFuture<String> in
+        struct Email: Content {
+            var email: String
+        }
+        let email: Email = try req.query.decode(Email.self)
         
-        
-        let smtp: SMTP = SMTP.init(hostname: "smtp.163.com", email: "lylapp@163.com", password: "301324lee")
-        let fromUser =  Mail.User(name: "注册码确认邮件", email: "lylapp@163.com")
-        let email = try req.parameters.next(String.self)
-        let toUser = Mail.User.init(email: email)
-        
-        let mail = Mail(from: fromUser
-            , to: [toUser]
-            , cc: [], bcc: []
-            , subject: "欢迎®️"
-            , text: "您的注册码是\(VerfiyCodeRender.renderInstance.default)"
-            , attachments: []
-            , additionalHeaders: [:])
-        
-        let result = req.eventLoop.newPromise(Bool.self)
-        
-        smtp.send(mail, completion: { (error) in
-            print(error as Any)
-            result.succeed(result: error == nil)
+        return    SKRegistVerfiy.query(on: req).filter(\.email, .equal, email.email).first().flatMap({ (verfiy) -> EventLoopFuture<String> in
             
+            
+            if let v = verfiy {//已经存在
+                let result = req.eventLoop.newPromise(String.self)
+                
+                result.succeed(result: v.emailExistMessage)
+                return result.futureResult
+                
+            }else{
+                
+                let reg =  SKRegistVerfiy.init(email: email.email)
+                return  reg.save(on: req).flatMap({ (skVer) -> EventLoopFuture<String> in
+                    
+                    let smtp: SMTP = SMTP.init(hostname: "smtp.163.com", email: "lylapp@163.com", password: "301324lee")
+                    let fromUser =  Mail.User(name: "注册码确认邮件", email: "lylapp@163.com")
+                    let email = skVer.email
+                    let toUser = Mail.User.init(email: email)
+                    
+                    let mail = Mail(from: fromUser
+                        , to: [toUser]
+                        , cc: [], bcc: []
+                        , subject: "欢迎®️"
+                        , text: skVer.message
+                        , attachments: []
+                        , additionalHeaders: [:])
+                    let result = req.eventLoop.newPromise(String.self)
+                    
+                    smtp.send(mail, completion: { (error) in
+                        print(error as Any)
+                        if let error = error {
+                            result.fail(error: error)
+                        }else{
+                            result.succeed(result: skVer.message)
+                        }
+                    })
+                    return result.futureResult
+                })
+            }
         })
-        //        HTTPResponseStatus
-        return   result.futureResult.map({ (b) -> HTTPResponseStatus in
-            return b ? .ok : .expectationFailed
-        })
-        
     }
     
     router.get("app") { (req) -> Future<HTTPStatus> in
@@ -175,14 +206,7 @@ public func routes(_ router: Router) throws {
     
 }
 
-struct InnerUser: Content{
-    var name: String
-    var email: String
-    var password:String
-                static var defaultContentType: MediaType{
-                    return .urlEncodedForm
-                }
-}
+
 
 struct User: Content {
     var name: String

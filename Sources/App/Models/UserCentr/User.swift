@@ -60,9 +60,34 @@ struct SKRegistVerfiy: SQLiteModel {
     var expri: Double = 60 * 60 * 24
 }
 extension SKRegistVerfiy{
+    
+    /// 邮箱验证入库
+    ///
+    /// - Parameters:
+    ///   - email: 接受验证码的邮箱
+    ///   - code: 随机验证码 默认6位数字
+    ///   - expri: 有效期默认1天
+    init(email: String, verfiyCode code:String = VerfiyCodeRender.renderInstance.default, expri: Double = 24 * 60 * 60){
+        let time = Date().timeIntervalSince1970
+        self.init(id: nil,
+                  email: email,
+                  verfiyCode: code,
+                  create: time,
+                  expri: expri)
+    }
+}
+extension SKRegistVerfiy{
     var isCodeAvailable: Bool{
         return Date().timeIntervalSince1970 - create <= expri
     }
+    
+    var message:String{
+        return "您的确认码已经发到：\(self.email) 确认码是:\(verfiyCode) 将在\(expri/(24*60*60))天过期"
+    }
+    var emailExistMessage: String{
+        return "您邮箱：\(email)已经注册，因此您不能重复用于注册"
+    }
+    
 }
 
 extension SKRegistVerfiy: All{}
