@@ -6,6 +6,7 @@ import SQLite
 import DatabaseKit
 
 /// Register your application's routes here.
+ 
 public func routes(_ router: Router) throws {
     
     
@@ -61,10 +62,12 @@ public func routes(_ router: Router) throws {
     }
     
     router.get("regist", use: SKUserController().regist)
+    router.get("login", use: SKUserController().login)
+    router.get("package", use: SKUserController().package)
+    
     
     router.post("users") { (req) -> Future<User> in
-        print( req.http.headers.firstValue(name: HTTPHeaderName.contentDisposition))
-        print(req.http.contentType)
+     
         return try! req.content.decode(User.self ).map(to: User.self, { (user) -> User in
             print(user.name) // "Vapor"
             print(user.age) // 3
