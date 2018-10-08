@@ -26,10 +26,16 @@ class SKUploadController {
                     
                     if let skUser = skUser {
 
-                        let path =  try! req.sharedContainer.make(DirectoryConfig.self).workDir + "Public/" + u.kind.type
+                        let path =  try! req.sharedContainer.make(DirectoryConfig.self).workDir + "Public/" + u.email
                         
                         do{
-                            let  filePath = path + upload.email  + "\(Date().timeIntervalSince1970)" +  u.kind.type
+                            let fileManager = FileManager.default
+                            if !fileManager.fileExists(atPath: path) {
+                                try fileManager.createDirectory(atPath: path
+                                    , withIntermediateDirectories: true
+                                    , attributes: [:])
+                            }
+                            let  filePath = path   + "/\(Date().timeIntervalSince1970)" +  u.kind.type
                             try upload.file.write(to: URL(fileURLWithPath: filePath))
                             return  try ipaTool(req: req, ipaPath: filePath).flatMap({ (info) -> EventLoopFuture<String> in
                                 let identifer =  (info["info"] as! Dictionary<String, Any>)["CFBundleIdentifier"] as! String
