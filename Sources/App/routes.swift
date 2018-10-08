@@ -64,7 +64,7 @@ public func routes(_ router: Router) throws {
     router.get("regist", use: SKUserController().regist)
     router.get("login", use: SKUserController().login)
     router.get("package", use: SKUserController().package)
-    
+    router.post("upload", use: SKUploadController().upload)
     
     router.post("users") { (req) -> Future<User> in
      
@@ -180,8 +180,8 @@ struct User: Content {
     var imageType: Int
     static var defaultContentType: MediaType  = .formData
 }
-extension Int{
-    var type: String{
+extension Int {
+  public  var type: String{
         switch self {
         case 0:
             return ".ipa"

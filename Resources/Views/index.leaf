@@ -2,12 +2,30 @@
 <head>
  </head>
 <body>
-<form method="POST" action="/users" enctype="multipart/form-data">
-<input type="text" name="name">
-<input type="text" name="age">
-<input type="file" name="image">
+
+<br>
+测试文件上传
+<br>
+<form method="POST" action="/upload" enctype="multipart/form-data">
+kind<input type="text" name="kind"><br>
+email<input type="text" name="email"><br>
+file<input type="file" name="file"><br>
+
 <input type="submit" value="Submit" />
 
 </form>
+
+<br>
+#/* 发送验证码 */
+<br>
+发送验证码
+<br>
+<form method="GET" action="/email" ><br>
+email<input type="text" name="email"><br>
+<input type="submit" value="Submit" /><br>
+
+</form>
+
+
 </body>
 </html>

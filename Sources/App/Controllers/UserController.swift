@@ -255,36 +255,6 @@ final class SKUserController {
                     if process.terminationReason == .exit{
                         print("结束🔚")
                     }
-//                    var value: Unmanaged<AnyObject> =       process.perform(#selector(process.binary(binaryPath:)), with: binaryPath)
-                    
-                    //                    if p.terminationReason == .exit  {
-                    //                        if p.isRunning{
-                    //                            p.terminate()
-                    //
-                    //                        }
-                    //                    let newProcess = Process.launchedProcess(launchPath: "/usr/bin/codesign"
-                    //                        , arguments:  ["-d", binaryPath, "--entitlements", ":-"] )
-                    //                    let pip = Pipe.init()
-                    //                    newProcess.standardOutput = pip
-                    //                    newProcess.terminationHandler = { t in
-                    //                        if t.terminationStatus == 0 {
-                    //                         let codesignEntitlementsData =   (t.standardOutput as! Pipe).fileHandleForReading.readDataToEndOfFile()
-                    //                         let entitlementsPropertyList:Dictionary<String, Any> =         try! PropertyListSerialization.propertyList(from: codesignEntitlementsData
-                    //                                , options:
-                    //                          PropertyListSerialization.ReadOptions.mutableContainers
-                    //                            , format: nil) as! Dictionary<String, Any>
-                    //
-                    //                        }
-                    //                    }
-                    //
-                    //                    if #available(OSX 10.13, *) {
-                    //                        try! newProcess.run()
-                    //                    } else {
-                    //                        // Fallback on earlier versions
-                    //                        }
-                    //
-                    //                    }
-                    
                     
                     result.succeed(result: "\(currentTempDirFolder)".appending(bundleExecutable)+"\(appPropertyList)")
                     

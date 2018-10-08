@@ -59,6 +59,8 @@ public func configure(_ config: inout Config, _ env: inout Environment, _ servic
     migrations.add(model: Tag.self, database: .sqlite)
     migrations.add(model: SKUser.self, database: .sqlite)
     migrations.add(model: SKRegistVerfiy.self, database: .sqlite)
+    migrations.add(model: SKInstallPackage.self, database: .sqlite)
+    migrations.add(model: SKPackage.self, database: .sqlite)
     services.register(migrations)
 
     
