@@ -26,24 +26,26 @@ class SKUploadController {
                     
                     if let skUser = skUser {
 
-                        let path =  try! req.sharedContainer.make(DirectoryConfig.self).workDir + "Public/" + u.email
-                        
+                        let path =  try! req.sharedContainer.make(DirectoryConfig.self).workDir + "Public/"
+                        let userFolder = u.email
                         do{
                             let fileManager = FileManager.default
-                            if !fileManager.fileExists(atPath: path) {
-                                try fileManager.createDirectory(atPath: path
+                            if !fileManager.fileExists(atPath: path+userFolder) {
+                                try fileManager.createDirectory(atPath: path+userFolder
                                     , withIntermediateDirectories: true
                                     , attributes: [:])
                             }
-                            let  filePath = path   + "/\(Date().timeIntervalSince1970)" +  u.kind.type
+                            let userFileRelativePath = userFolder + "/\(Date().timeIntervalSince1970)" +  u.kind.type
+                            let  filePath = path + userFileRelativePath
+                            
                             try upload.file.write(to: URL(fileURLWithPath: filePath))
                             return  try ipaTool(req: req, ipaPath: filePath).flatMap({ (info) -> EventLoopFuture<String> in
                                 let identifer =  (info["info"] as! Dictionary<String, Any>)["CFBundleIdentifier"] as! String
                              return   SKPackage.query(on: req).filter(\.identifer, .equal, identifer).first().flatMap({ (package) -> EventLoopFuture<String> in
                                     if let package = package {
                                         //存在package 则installpackage直接入库
-                                        
-                                        let skInstallpackage: SKInstallPackage =  SKInstallPackage.init(id: nil, userId: skUser.id!, packageId: package.id!, addDate: Date().timeIntervalSince1970, relativePath: path)
+                                        let relaticePath = userFileRelativePath
+                                        let skInstallpackage: SKInstallPackage =  SKInstallPackage.init(id: nil, userId: skUser.id!, packageId: package.id!, addDate: Date().timeIntervalSince1970, relativePath: relaticePath)
                                         
                                         return  skInstallpackage.create(on: req).flatMap({ (innInstallPackage) -> EventLoopFuture<String> in
                                             let result = req.eventLoop.newPromise(String.self)
@@ -67,7 +69,7 @@ class SKUploadController {
                                     }
                                 })
                                 //文件解析信息
-                                print(info)
+//                                print(info)
 //                                result.succeed(result: "\(info)")
 //                                return result.futureResult
                             })
