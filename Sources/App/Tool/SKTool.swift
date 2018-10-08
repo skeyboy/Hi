@@ -7,6 +7,14 @@
 
 import Foundation
 import Vapor
+
+/// 根据请求 和 本地的IPA文件分析出安装信息
+///
+/// - Parameters:
+///   - req: <#req description#>
+///   - path: IPA文件路径
+/// - Returns: <#return value description#>
+/// - Throws: <#throws value description#>
 public func ipaTool(req: Request, ipaPath path: String)throws -> EventLoopFuture<Dictionary<String, Any>>{
     //let path =  try req.sharedContainer.make(DirectoryConfig.self).workDir + "Public/s1538917708.271797.ipa"
     let currentTempDirFolder = NSTemporaryDirectory().appending(UUID.init().uuidString)
@@ -54,6 +62,14 @@ public func ipaTool(req: Request, ipaPath path: String)throws -> EventLoopFuture
         }
         
     }
+    
+    return result.futureResult
+}
+
+public func apkTool(req: Request, apkPath path: String)throws-> EventLoopFuture<String>{
+    let result = req.eventLoop.newPromise(String.self)
+    
+    
     
     return result.futureResult
 }

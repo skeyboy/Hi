@@ -26,59 +26,9 @@ enum SKUserStatus: Int{
     case suspend = 2
     case unidentified = 3
 }
-extension Process{
-    @objc  func binary( binaryPath: String){
-        let newProcess = Process.launchedProcess(launchPath: "/usr/bin/codesign"
-            , arguments:  ["-d", binaryPath, "--entitlements", ":-"] )
-        let pip = Pipe.init()
-        newProcess.standardOutput = pip
-        newProcess.terminationHandler = { t in
-            if t.terminationStatus == 0 {
-                let codesignEntitlementsData =   (t.standardOutput as! Pipe).fileHandleForReading.readDataToEndOfFile()
-                let entitlementsPropertyList:Dictionary<String, Any> =         try! PropertyListSerialization.propertyList(from: codesignEntitlementsData
-                    , options:
-                    PropertyListSerialization.ReadOptions.mutableContainers
-                    , format: nil) as! Dictionary<String, Any>
-                
-            }
-        }
-        
-        if #available(OSX 10.13, *) {
-            try! newProcess.run()
-        } else {
-            // Fallback on earlier versions
-        }
-        
-    }
-}
 
-/// SK的用户数据模型
-public struct SKUser: SQLiteModel {
-    public  var id: Int?
-    var name: String
-    var createDate: TimeInterval?
-    var updateDate: TimeInterval?
-    var email: String
-    var password:String
-    
-    /// 默认会发邮件点击d链接完成确认
-    var status: Int? = SKUserStatus.ok.rawValue
-    public   init(name: String, email: String, password: String) {
-        self.name = name
-        
-        self.email = email
-        self.password = try! MD5.hash(password).base64EncodedString()
-        self.createDate = Date().timeIntervalSince1970
-        self.updateDate = self.createDate
-    }
-    
-}
-extension SKUser: Migration&Content&Parameter {
-    public static var defaultContentType: MediaType {
-        return .json
-    }
-    
-}
+
+
 extension String{
     var md5Base64: String{
         return try! MD5.hash(self).base64EncodedString()
@@ -86,29 +36,7 @@ extension String{
 }
 
 final class SKUserController {
-    func binary( binaryPath: String){
-        let newProcess = Process.launchedProcess(launchPath: "/usr/bin/codesign"
-            , arguments:  ["-d", binaryPath, "--entitlements", ":-"] )
-        let pip = Pipe.init()
-        newProcess.standardOutput = pip
-        newProcess.terminationHandler = { t in
-            if t.terminationStatus == 0 {
-                let codesignEntitlementsData =   (t.standardOutput as! Pipe).fileHandleForReading.readDataToEndOfFile()
-                let entitlementsPropertyList:Dictionary<String, Any> =         try! PropertyListSerialization.propertyList(from: codesignEntitlementsData
-                    , options:
-                    PropertyListSerialization.ReadOptions.mutableContainers
-                    , format: nil) as! Dictionary<String, Any>
-                
-            }
-        }
-        
-        if #available(OSX 10.13, *) {
-            try! newProcess.run()
-        } else {
-            // Fallback on earlier versions
-        }
-        
-    }
+
     public func regist(req: Request)throws-> EventLoopFuture<String>{
         
         struct InnerUser : Content {
@@ -218,9 +146,6 @@ final class SKUserController {
             }
         })
     }
-    
- 
-    
     public func package(req:Request)throws-> EventLoopFuture<String>{
         let path =  try req.sharedContainer.make(DirectoryConfig.self).workDir + "Public/s1538917708.271797.ipa"
         let currentTempDirFolder = NSTemporaryDirectory().appending(UUID.init().uuidString)
@@ -289,34 +214,34 @@ final class SKUserController {
         //        }
         return result.futureResult
     }
-        public func login(req: Request)throws-> EventLoopFuture<String>{
-        struct InnerUser: Content{
-            var email: String
-            var password: String
-        }
-        
-        let user = try! req.query.decode(InnerUser.self)
-     return   SKUser.query(on: req).group(SQLiteBinaryOperator.or) { (or) in
-            or.filter(\.email, SQLiteBinaryOperator.equal, user.email)
-            }.all().flatMap { (us) -> EventLoopFuture<String> in
-                let result = req.eventLoop.newPromise(String.self)
-
-                if us.isEmpty {
-                    result.succeed(result: "用户不存在")
-                    return result.futureResult
-                }else{
-                    
-                    if us.first!.password.elementsEqual(user.password.md5Base64) {
-                        
-                        result.succeed(result: "登陆成功:\(us.first!)")
-                    }else{
-                        result.succeed(result: "密码错误")
-                    }
-                    return result.futureResult
-                }
-        }
-        
+    public func login(req: Request)throws-> EventLoopFuture<String>{
+    struct InnerUser: Content{
+        var email: String
+        var password: String
     }
+    
+    let user = try! req.query.decode(InnerUser.self)
+    return   SKUser.query(on: req).group(SQLiteBinaryOperator.or) { (or) in
+        or.filter(\.email, SQLiteBinaryOperator.equal, user.email)
+        }.all().flatMap { (us) -> EventLoopFuture<String> in
+            let result = req.eventLoop.newPromise(String.self)
+
+            if us.isEmpty {
+                result.succeed(result: "用户不存在")
+                return result.futureResult
+            }else{
+                
+                if us.first!.password.elementsEqual(user.password.md5Base64) {
+                    
+                    result.succeed(result: "登陆成功:\(us.first!)")
+                }else{
+                    result.succeed(result: "密码错误")
+                }
+                return result.futureResult
+            }
+    }
+    
+}
     
 }
 

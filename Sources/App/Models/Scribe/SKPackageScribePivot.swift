@@ -27,6 +27,7 @@ struct SKPackageScribePivot: SQLitePivot {
     var packageId: Int
     
 }
+extension SKPackageScribePivot :   Content & Migration {}
 
 extension SKUser{
     var packages:Siblings<SKUser,SKPackage,SKPackageScribePivot>{
@@ -34,11 +35,7 @@ extension SKUser{
     }
 }
 
-extension SKPackage{
-    var users:Siblings<SKPackage, SKUser, SKPackageScribePivot>{
-        return siblings()
-    }
-}
+
 
 extension SKPackageScribePivot: ModifiablePivot{
     init(_ left: SKUser, _ right: SKPackage) throws {

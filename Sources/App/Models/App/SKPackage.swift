@@ -41,3 +41,10 @@ extension SKPackage{
         return parent(\.userId)
     }
 }
+
+
+extension SKPackage{
+    var users:Siblings<SKPackage, SKUser, SKPackageScribePivot>{
+        return siblings()
+    }
+}
