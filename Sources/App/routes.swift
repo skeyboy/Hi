@@ -44,13 +44,18 @@ public func routes(_ router: Router) throws {
         }
         struct Headers: Codable {
             var headers = [Header]()
+            var list:[String] = [String]()
         }
         var headers: Headers =     Headers()
+        
         let headList =  req.http.headers.map({ (name, value) -> Header in
-            return Header(name: name, value: value)
+            let v = Header(name: name, value: value)
+            return v
         })
         
+        
         headers.headers.append(contentsOf: headList)
+        headers.list = ["A", "B","C"]
         
         return  try req.view().render("leaf", headers)
         //        return try   req.view().render("leaf", userInfo: ["headers": SolarSystem() ])
@@ -65,6 +70,7 @@ public func routes(_ router: Router) throws {
     router.get("login", use: SKUserController().login)
     router.get("package", use: SKUserController().package)
     router.post("upload", use: SKUploadController().upload)
+    
     
     router.post("users") { (req) -> Future<User> in
      
@@ -86,7 +92,7 @@ public func routes(_ router: Router) throws {
         })
     }
     
-    
+    router.get("ssubcribe", use: SKUserController().subcribeUserPackage)
     router.grouped("sessions").grouped(SessionsMiddleware.self).get("foo") { (req) -> String in
         try! req.session()["name"] = UUID.init(uuidString: "d")?.uuidString
         
@@ -123,39 +129,6 @@ public func routes(_ router: Router) throws {
         
     }
     
-    /*
-    router.get("regist") { (req) ->  EventLoopFuture<String> in
-        struct InnerUser: Content{
-            var name: String
-            var email: String
-            var password:String
-            static var defaultContentType: MediaType{
-                return .urlEncodedForm
-            }
-        }
-        
-        let user =  try!  req.query.decode(InnerUser.self)
-        
-        let skUser: SKUser = SKUser.init(name: user.name, email: user.email, password: user.password)
-        
-        return  SKUser.query(on: req)
-            .filter(\SKUser.email,
-                    .equal,
-                    try! MD5.hash(skUser.email).base64EncodedString() )
-            .first()
-            .flatMap({ (u) -> EventLoopFuture<String> in
-                if u != nil {
-                    return   u!.save(on: req).map({ (x) -> String in
-                        return "\(x)"
-                    })
-                }else {
-                    let r =   req.eventLoop.newPromise(String.self)
-                    r.succeed(result: "邮箱已存在")
-                    return r.futureResult
-                }
-            })
-    }
-    */
     router.get("email", use: SKUserController().sendCode)
 
     
@@ -168,6 +141,22 @@ public func routes(_ router: Router) throws {
         }
     }
     
+    router.get("package") { (req) -> Future<View> in
+        
+        SKPackage.query(on: req).all().flatMap({ (pgs) -> EventLoopFuture<View> in
+            struct PInfos: Codable {
+                var packages: [SKPackage] = [SKPackage]()
+            }
+            
+            var pInfos = PInfos()
+          pInfos.packages.append(contentsOf:   pgs.map({ (pk) -> SKPackage  in
+                return pk
+            }))
+//            return try req.view().render("package.leaf", userInfo: ["list":pInfos])
+            return try req.view().render("package.leaf", pInfos)
+        })
+//         return try req.view().render("package.leaf", userInfo: ["name":"s", "list":[1, 2,3].makeIterator()])
+    }
 }
 
 

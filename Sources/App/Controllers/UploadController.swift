@@ -13,14 +13,18 @@ import SwiftSMTP
 import FluentSQLite
 import Crypto
 class SKUploadController {
-    
+    func boot(router: Router) throws {
+//        router.post(Upload.self
+//            , at: "upload"
+//            , use: upload)
+    }
     /// 根据局用户邮箱来上传安装包
     ///
     /// - Parameter req: <#req description#>
     /// - Returns: <#return value description#>
     public func upload( req: Request) -> EventLoopFuture<String>{
-        
         do{
+            
             return try req.content.decode(Upload.self).flatMap { (u) -> EventLoopFuture<String> in
                 let upload: Upload = u
                 //            let upload: Upload = try req.query.decode(Upload.self)

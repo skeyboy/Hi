@@ -36,7 +36,8 @@ extension String{
 }
 
 final class SKUserController {
-
+    
+    
     public func regist(req: Request)throws-> EventLoopFuture<String>{
         
         struct InnerUser : Content {
@@ -156,10 +157,10 @@ final class SKUserController {
         let process: Process = Process.launchedProcess(launchPath: "/usr/bin/unzip"
             , arguments: ["-u", "-j", "-d", currentTempDirFolder, path, "Payload/*.app/embedded.mobileprovision", "Payload/*.app/Info.plist","*","-x", "*/*/*/*"])
         
-//        let pip = Pipe()
-//        process.standardOutput = pip
-//        pip.fileHandleForReading.readToEndOfFileInBackgroundAndNotify()
-//        pip.fileHandleForWriting.waitForDataInBackgroundAndNotify()
+        //        let pip = Pipe()
+        //        process.standardOutput = pip
+        //        pip.fileHandleForReading.readToEndOfFileInBackgroundAndNotify()
+        //        pip.fileHandleForWriting.waitForDataInBackgroundAndNotify()
         process.terminationHandler = {p in
             let status = p.terminationStatus
             
@@ -215,33 +216,86 @@ final class SKUserController {
         return result.futureResult
     }
     public func login(req: Request)throws-> EventLoopFuture<String>{
-    struct InnerUser: Content{
-        var email: String
-        var password: String
-    }
-    
-    let user = try! req.query.decode(InnerUser.self)
-    return   SKUser.query(on: req).group(SQLiteBinaryOperator.or) { (or) in
-        or.filter(\.email, SQLiteBinaryOperator.equal, user.email)
-        }.all().flatMap { (us) -> EventLoopFuture<String> in
-            let result = req.eventLoop.newPromise(String.self)
-
-            if us.isEmpty {
-                result.succeed(result: "用户不存在")
-                return result.futureResult
-            }else{
+        struct InnerUser: Content{
+            var email: String
+            var password: String
+        }
+        
+        let user = try! req.query.decode(InnerUser.self)
+        return   SKUser.query(on: req).group(SQLiteBinaryOperator.or) { (or) in
+            or.filter(\.email, SQLiteBinaryOperator.equal, user.email)
+            }.all().flatMap { (us) -> EventLoopFuture<String> in
+                let result = req.eventLoop.newPromise(String.self)
                 
-                if us.first!.password.elementsEqual(user.password.md5Base64) {
-                    
-                    result.succeed(result: "登陆成功:\(us.first!)")
+                if us.isEmpty {
+                    result.succeed(result: "用户不存在")
+                    return result.futureResult
                 }else{
-                    result.succeed(result: "密码错误")
+                    
+                    if us.first!.password.elementsEqual(user.password.md5Base64) {
+                        
+                        result.succeed(result: "登陆成功:\(us.first!)")
+                    }else{
+                        result.succeed(result: "密码错误")
+                    }
+                    return result.futureResult
                 }
-                return result.futureResult
-            }
+        }
+        
+    }
+    //订阅安装包
+    public func subcribeUserPackage(req: Request)throws -> EventLoopFuture<String>{
+        struct InnerPackage: Content{
+            var packageId: Int
+            var userId: Int
+        }
+        let innerPackage: InnerPackage = try! req.query.decode(InnerPackage.self)
+        return SKPackage.query(on: req).filter(\.id, .equal, innerPackage.packageId).first()
+            .flatMap({ (package: SKPackage?) -> EventLoopFuture<(SKPackage?, SKUser?, InnerPackage)> in
+                return  SKUser.query(on: req).filter(\.id, .equal,innerPackage.userId)
+                    .first()
+                    .flatMap({ (user:SKUser?) -> EventLoopFuture<(SKPackage?, SKUser?, InnerPackage)> in
+                        let result = req.eventLoop.newPromise((SKPackage?, SKUser?, InnerPackage).self)
+                        result.succeed(result: (package, user, innerPackage))
+                        return result.futureResult
+                    })
+            }).flatMap({ (value:(SKPackage?, SKUser?, InnerPackage)) -> EventLoopFuture<(SKPackageScribePivot?, SKPackage?, SKUser?)> in
+                
+                return SKPackageScribePivot.query(on: req)
+                    .filter(\.packageId, .equal, value.2.packageId)
+                    .filter(\.userId, .equal, value.2.userId)
+                    .first().flatMap({ (pivot: SKPackageScribePivot?) -> EventLoopFuture<(SKPackageScribePivot?, SKPackage?, SKUser?)> in
+                        let result = req.eventLoop.newPromise((SKPackageScribePivot?, SKPackage?, SKUser?).self)
+                        result.succeed(result: (pivot,value.0, value.1))
+                        return result.futureResult
+                    })
+            }).flatMap({ (p) -> EventLoopFuture<String> in
+                
+                //发送的订阅信息有问题
+                if p.1 == nil || p.2 == nil {
+                    let result = req.eventLoop.newPromise(String.self)
+                    if p.2 == nil {
+                        result.succeed(result: "用户不存在")
+                    }
+                    if p.2 == nil {
+                        result.succeed(result: "订阅的包不存在")
+                    }
+                    return result.futureResult
+                }
+                
+                if p.0 == nil {//可以订阅
+                    return try SKPackageScribePivot.init(p.2!, p.1!)
+                        .create(on: req).map({ (p) -> String in
+                            return "订阅成功"
+                        })
+                }else {//重复订阅
+                    let result = req.eventLoop.newPromise(String.self)
+                    result.succeed(result: "不能重复订阅")
+                    return result.futureResult
+                }
+            })
     }
     
-}
     
 }
 
@@ -311,8 +365,6 @@ extension SKRegistVerfiy{
     }
     
 }
-//typealias All = Migration&Content&Parameter
-
 extension SKRegistVerfiy: Migration&Content&Parameter {
     
 }

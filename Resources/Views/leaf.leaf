@@ -3,5 +3,9 @@
 #for(header in headers){
 <li>#(header.name) : #(header.value)</li>
 }
+#for(i in list){
+<li> #(i) </li>
+
+}
 </body>
 <html>
