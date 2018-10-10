@@ -1,14 +1,19 @@
-<html>
-<head>
- </head>
-<body>
+
+#set("body"){
 
 <br>
 测试文件上传
 <br>
 <form method="POST" action="/upload" enctype="multipart/form-data">
-kind<input type="text" name="kind"><br>
-email<input type="text" name="email"><br>
+kind<input type="text" name="kind" placeholder="安装包类型（0 iOS 1 Android）"><br>
+选择上传文件类型：
+<select >
+<option>0</option>
+<option>1</option>
+</select>
+<br>
+
+email<input type="text" name="email" placeholder="上传者邮箱"><br>
 file<input type="file" name="file"><br>
 
 <input type="submit" value="Submit" />
@@ -16,8 +21,8 @@ file<input type="file" name="file"><br>
 </form>
 
 <br>
-#/* 发送验证码 */
-<br>
+ #/* 发送验证码 */
+ <br>
 发送验证码
 <br>
 <form method="GET" action="/email" ><br>
@@ -27,5 +32,6 @@ email<input type="text" name="email"><br>
 </form>
 
 
-</body>
-</html>
+}
+
+#embed("base")

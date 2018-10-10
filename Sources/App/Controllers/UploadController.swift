@@ -51,10 +51,11 @@ class SKUploadController {
                                 return  try ipaTool(req: req, ipaPath: filePath).flatMap({ (info) -> EventLoopFuture<String> in
                                     let identifer =  (info["info"] as! Dictionary<String, Any>)["CFBundleIdentifier"] as! String
                                     return   SKPackage.query(on: req).filter(\.identifer, .equal, identifer).first().flatMap({ (package) -> EventLoopFuture<String> in
+                                        let relativePath = userFileRelativePath //相对与系统的Public的相对路径
+
                                         if let package = package {
                                             //存在package 则installpackage直接入库
-                                            let relaticePath = userFileRelativePath //相对与系统的Public的相对路径
-                                            let skInstallpackage: SKInstallPackage =  SKInstallPackage.init(id: nil, userId: skUser.id!, packageId: package.id!, addDate: Date().timeIntervalSince1970, relativePath: relaticePath)
+                                            let skInstallpackage: SKInstallPackage =  SKInstallPackage.init(id: nil, userId: skUser.id!, packageId: package.id!, addDate: Date().timeIntervalSince1970, relativePath: relativePath)
                                             
                                             return  skInstallpackage.create(on: req).flatMap({ (innInstallPackage) -> EventLoopFuture<String> in
                                                
@@ -72,7 +73,7 @@ class SKUploadController {
                                         }else{//不存在 则先package信息入库，然后installpackage入库
                                             return SKPackage(userId: skUser.id!, identifer: identifer, type: upload.kind).create(on: req).flatMap({ (p) -> EventLoopFuture<String> in
                                                 
-                                                let skInstallpackage: SKInstallPackage =  SKInstallPackage.init(id: nil, userId: skUser.id!, packageId: p.id!, addDate: Date().timeIntervalSince1970, relativePath: path)
+                                                let skInstallpackage: SKInstallPackage =  SKInstallPackage.init(id: nil, userId: skUser.id!, packageId: p.id!, addDate: Date().timeIntervalSince1970, relativePath: relativePath)
                                                 return  skInstallpackage.create(on: req).flatMap({ (sInstallPackage) -> EventLoopFuture<String> in
                                                     return sInstallPackage.package.get(on: req).flatMap({ (sk:SKPackage) -> EventLoopFuture<String> in
                                                         return try self.uploadResult(req: req, sk: sk)
@@ -113,6 +114,7 @@ class SKUploadController {
         }
     }
     
+   
     
     func uploadResult(req: Request, sk:SKPackage)throws -> EventLoopFuture<String> {
         return   try  sk.users.query(on: req).all().flatMap({ (us) -> EventLoopFuture<String> in
@@ -128,27 +130,33 @@ class SKUploadController {
                     return Mail.User.init(name: u.name, email: u.email)
                 })
                 
-                let smtp: SMTP = SMTP.init(hostname: "smtp.163.com", email: "lylapp@163.com", password: "301324lee")
-                let fromUser =  Mail.User(name: "注册码确认邮件", email: "lylapp@163.com")
-                //                                                let email = skVer.email
-                //                                                let toUser = Mail.User.init(email: email)
-                
-                let mail = Mail(from: fromUser
-                    , to: toSubscribes
-                    , cc: [], bcc: []
-                    , subject: "欢迎®️"
-                    , text: "您关注的App更新了点击查看"
-                    , attachments: []
-                    , additionalHeaders: [:])
-                
-                smtp.send(mail, completion: { (error) in
-                    print(error as Any)
+                SKMialTool.mail(to: toSubscribes, subject: "App更新提示", text: "您关注的App已经发布更新：点击查看", attachments: [], completion: { (error) in
                     if let error = error {
                         result.fail(error: error)
                     }else{
                         result.succeed(result: "已经发送给订阅者")
                     }
                 })
+                
+//                let smtp: SMTP = SMTP.init(hostname: "smtp.163.com", email: "lylapp@163.com", password: "301324lee")
+//                let fromUser =  Mail.User(name: "注册码确认邮件", email: "lylapp@163.com")
+//
+//                let mail = Mail(from: fromUser
+//                    , to: toSubscribes
+//                    , cc: [], bcc: []
+//                    , subject: "欢迎®️"
+//                    , text: "您关注的App更新了点击查看"
+//                    , attachments: []
+//                    , additionalHeaders: [:])
+//
+//                smtp.send(mail, completion: { (error) in
+//                    print(error as Any)
+//                    if let error = error {
+//                        result.fail(error: error)
+//                    }else{
+//                        result.succeed(result: "已经发送给订阅者")
+//                    }
+//                })
                 
             }
             return result.futureResult

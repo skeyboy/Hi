@@ -30,14 +30,14 @@ extension SKPackage : Content&Migration&Parameter{}
 
 // MARK: - 安装的真实安装资源列表
 extension SKPackage{
-    var packages:Children<SKPackage, SKInstallPackage>{
+     var packages:Children<SKPackage, SKInstallPackage>{
         return children(\.packageId)
     }
 }
 
 // MARK: - 安装包 逆推 创建者
 extension SKPackage{
-    var owner:Parent<SKPackage, SKUser>{
+     var owner:Parent<SKPackage, SKUser>{
         return parent(\.userId)
     }
 }
