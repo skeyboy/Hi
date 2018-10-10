@@ -144,7 +144,12 @@ public func routes(_ router: Router) throws {
     router.get("package") { (req) -> Future<View> in
         
         struct  PInfoList: Codable {
+            var title: String = "Hello"
             var list: [PInfo] = [PInfo]()
+            init(list: [PInfo] = []) {
+                self.list.append(contentsOf: list)
+                self.title = "Hello"
+            }
         }
         struct PInfo: Codable{
             var package: SKPackage
@@ -192,6 +197,7 @@ public func routes(_ router: Router) throws {
                 })
             }).flatten(on: req).flatMap({ (ps) -> EventLoopFuture<PInfoList> in
                 var pList = PInfoList(list: ps)
+                pList.title = "安装包查看"
                 let result  = req.eventLoop.newPromise(PInfoList.self)
                 
                 result.succeed(result: pList)
