@@ -1,0 +1,86 @@
+#set("body"){
+#for(item in list){
+用户名：#(item.user.name)<br>
+ID:#(item.user.id)
+
+<div  class="panel callout" style="padding:20px;">
+<h2>
+<a href="#"   data-options="is_hover:true" class="button split">历史版本查看<span data-dropdown="id#(item.package.id)"></span></a>
+
+<table id="id#(item.package.id)" data-dropdown-content class="f-dropdown">
+<thead>
+<tr>
+<th>上传日期</th>
+<th>文件路径</th>
+<th>文件类型</>
+</tr>
+</thead>
+<tbody>
+#for(install in item.installs){
+</tr>
+<td>#date(install.addDate)</td>
+<td>#(install.relativePath)</td>
+<td>
+<a href="#(install.relativePath)">
+<span class="label">
+
+#if(item.package.type == 0){
+ipa
+}else{
+#(item.package.type)
+}</span></a>
+</td>
+}
+</td>
+
+</tr>
+</tbody>
+</table>
+
+
+
+</h2>
+
+</div>
+ 
+
+<div class="responsive">
+<table>
+<thead>
+<tr>
+<th>包名</th>
+<th>用户</th>
+<th>更新日期</th>
+<th>文件类型</th>
+<th>包名</th>
+
+<th> </>
+</tr>
+</thead>
+<tbody>
+
+
+
+<tr>
+<td>#(item.package.id)</td>
+<td>#(item.package.userId)</td>
+<td>#date(item.package.createDate,"YYYY-MM-dd HH:mm")</td>
+<td>#if(item.package.type == 0){
+ipa
+}else{
+#(item.package.type)
+}</td>
+<td>#(item.package.identifer)</td>
+</tbody>
+</table>
+
+</div>
+
+
+}
+}
+#set("title"){
+#(title)
+}
+#embed("base")
+
