@@ -40,6 +40,8 @@ final class SKUserController {
     
     public func regist(req: Request)throws-> EventLoopFuture<String>{
         
+        let smtp: SKSmtp =  try req.make(SKSmtp.self)
+        smtp.send(<#T##mail: Mail##Mail#>, completion: <#T##((Error?) -> Void)?##((Error?) -> Void)?##(Error?) -> Void#>)
         struct InnerUser : Content {
             var name:String
             var code: String
@@ -120,16 +122,17 @@ final class SKUserController {
                 let reg =  SKRegistVerfiy.init(email: email.email)
                 return  reg.save(on: req).flatMap({ (skVer) -> EventLoopFuture<String> in
                     
+                   
+                    
                     let smtp: SMTP = SMTP.init(hostname: "smtp.163.com", email: "lylapp@163.com", password: "301324lee")
                     let fromUser =  Mail.User(name: "注册码确认邮件", email: "lylapp@163.com")
                     let email = skVer.email
                     let toUser = Mail.User.init(email: email)
-                    
                     let mail = Mail(from: fromUser
                         , to: [toUser]
                         , cc: [], bcc: []
                         , subject: "欢迎®️"
-                        , text: skVer.message
+                        , text: skVer.message + "\n\(req.http.url.host)"
                         , attachments: []
                         , additionalHeaders: [:])
                     let result = req.eventLoop.newPromise(String.self)
@@ -308,9 +311,7 @@ struct SKResponse<T> : Content where T: Content {
 
 public class VerfiyCodeRender{
     
-    private init() {
-        
-    }
+    private init() {}
     public static let renderInstance = VerfiyCodeRender()
     public func generateVerfiyCode(_ seed:String = "1234567890", codeLenght maxLength: Int = 6)-> String{
         var verfiyCode = ""
@@ -323,7 +324,6 @@ public class VerfiyCodeRender{
     var  `default`: String{
         return generateVerfiyCode()
     }
-    
 }
 
 

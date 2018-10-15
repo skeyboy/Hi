@@ -127,10 +127,10 @@ class SKUploadController {
             }else{//发送订阅者
                 
                 let toSubscribes: [Mail.User] =  us.map({ (u) -> Mail.User in
+
                     return Mail.User.init(name: u.name, email: u.email)
                 })
-                
-                SKMialTool.mail(to: toSubscribes, subject: "App更新提示", text: "您关注的App已经发布更新：点击查看", attachments: [], completion: { (error) in
+                 SKMialTool.mail(to: toSubscribes, subject: "App更新提示", text: "您关注的App已经发布更新", attachments: [], completion: { (error) in
                     if let error = error {
                         result.fail(error: error)
                     }else{

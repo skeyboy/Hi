@@ -68,7 +68,7 @@ public func routes(_ router: Router) throws {
     
     router.get("regist", use: SKUserController().regist)
     router.get("login", use: SKUserController().login)
-    router.get("package", use: SKUserController().package)
+//    router.get("package", use: SKUserController().package)
     router.post("upload", use: SKUploadController().upload)
     
     
@@ -140,8 +140,8 @@ public func routes(_ router: Router) throws {
             return .ok
         }
     }
-    
-    router.get("package") { (req) -> Future<View> in
+   
+    router.get("package",Int.parameter,"userId",Int.parameter) { (req) -> Future<View> in
         
         struct  PInfoList: Codable {
             var title: String = "Hello"
@@ -172,40 +172,109 @@ public func routes(_ router: Router) throws {
         struct PInfos: Codable {
             var packages: [PInfo] = [PInfo]()
         }
-        let view =  SKPackage.query(on: req).all().flatMap({ (ps) -> EventLoopFuture<PInfoList> in
+        struct P: Content {
             
-          return  ps.map({ (p) -> EventLoopFuture<(SKPackage, SKUser?,[SKInstallPackage?])> in
+        
+            var userId: Int
+            var packageId: Int
+        }
+      let packageId = try req.parameters.next(Int.self)
+     let userId  = try req.parameters.next(Int.self)
+//       let userId = try! req.parameters.values.last?.value
+//        let packageId = try! req.parameters.values.first?.value
+let p = P(userId: userId, packageId: packageId)
+        
+
+        let view =  SKPackage.query(on: req).all().flatMap({ (ps) -> EventLoopFuture<PInfoList> in
+
+            return  ps.map({ (p) -> EventLoopFuture<(SKPackage, SKUser?,[SKInstallPackage?])> in
                 return p.owner.query(on: req).first().flatMap({ (u) -> EventLoopFuture<(SKPackage, SKUser?)> in
                     let resutl = req.eventLoop.newPromise((SKPackage, SKUser?).self)
                     resutl.succeed(result: (p,u))
                     return resutl.futureResult
                 }).flatMap({ (pk) -> EventLoopFuture<(SKPackage, SKUser?, [SKInstallPackage?])> in
-                   return try pk.0.packages.query(on: req).all().flatMap({ (pks) -> EventLoopFuture<(SKPackage, SKUser?, [SKInstallPackage?])> in
+                    return try pk.0.packages.query(on: req).all().flatMap({ (pks) -> EventLoopFuture<(SKPackage, SKUser?, [SKInstallPackage?])> in
                         let resutl = req.eventLoop.newPromise((SKPackage, SKUser?,[SKInstallPackage?]).self)
                         resutl.succeed(result: (pk.0,pk.1, pks))
                         return resutl.futureResult
                     })
                 })
             }).map({ (e) -> EventLoopFuture<PInfo> in
-             
-               return e.map({ (value:(SKPackage, SKUser?, [SKInstallPackage?])) -> PInfo in
-                
-                let pInfo = PInfo(value.0, user: value.1, installs: value.2 as! [SKInstallPackage])
-                
-                
-                return pInfo
+
+                return e.map({ (value:(SKPackage, SKUser?, [SKInstallPackage?])) -> PInfo in
+
+                    let pInfo = PInfo(value.0, user: value.1, installs: value.2 as! [SKInstallPackage])
+
+
+                    return pInfo
                 })
             }).flatten(on: req).flatMap({ (ps) -> EventLoopFuture<PInfoList> in
                 var pList = PInfoList(list: ps)
                 pList.title = "安装包查看"
                 let result  = req.eventLoop.newPromise(PInfoList.self)
-                
+
                 result.succeed(result: pList)
                 return result.futureResult
             })
         }).flatMap({ (pList) -> EventLoopFuture<View> in
             return try req.view().render("package.leaf", pList)
         })
+        return view
+        
+
+
+        return    SKPackageScribePivot.query(on: req).group(SQLiteBinaryOperator.or, closure: { (or) in
+            or.filter(\SKPackageScribePivot.userId, .equal, p.userId).filter(\SKPackageScribePivot.packageId, .equal, p.packageId)
+            or.filter(\SKPackageScribePivot.userId, .equal, p.userId)
+        }).first().flatMap({ (pivot) -> EventLoopFuture<SKPackageScribePivot?> in
+            let result = req.eventLoop.newPromise(SKPackageScribePivot?.self)
+            result.succeed(result: pivot)
+            return result.futureResult
+        }).flatMap({ (pivot) -> EventLoopFuture<View> in
+            if pivot != nil {
+                let view =  SKPackage.query(on: req).filter(\.id, .equal, pivot!.packageId).all().flatMap({ (ps) -> EventLoopFuture<PInfoList> in
+
+                    return  ps.map({ (p) -> EventLoopFuture<(SKPackage, SKUser?,[SKInstallPackage?])> in
+                        return p.owner.query(on: req).first().flatMap({ (u) -> EventLoopFuture<(SKPackage, SKUser?)> in
+                            let resutl = req.eventLoop.newPromise((SKPackage, SKUser?).self)
+                            resutl.succeed(result: (p,u))
+                            return resutl.futureResult
+                        }).flatMap({ (pk) -> EventLoopFuture<(SKPackage, SKUser?, [SKInstallPackage?])> in
+                            return try pk.0.packages.query(on: req).all().flatMap({ (pks) -> EventLoopFuture<(SKPackage, SKUser?, [SKInstallPackage?])> in
+                                let resutl = req.eventLoop.newPromise((SKPackage, SKUser?,[SKInstallPackage?]).self)
+                                resutl.succeed(result: (pk.0,pk.1, pks))
+                                return resutl.futureResult
+                            })
+                        })
+                    }).map({ (e) -> EventLoopFuture<PInfo> in
+
+                        return e.map({ (value:(SKPackage, SKUser?, [SKInstallPackage?])) -> PInfo in
+
+                            let pInfo = PInfo(value.0, user: value.1, installs: value.2 as! [SKInstallPackage])
+
+
+                            return pInfo
+                        })
+                    }).flatten(on: req).flatMap({ (ps) -> EventLoopFuture<PInfoList> in
+                        var pList = PInfoList(list: ps)
+                        pList.title = "安装包查看"
+                        let result  = req.eventLoop.newPromise(PInfoList.self)
+
+                        result.succeed(result: pList)
+                        return result.futureResult
+                    })
+                }).flatMap({ (pList) -> EventLoopFuture<View> in
+                    return try req.view().render("package.leaf", pList)
+                })
+                return view
+            }else{
+                return try req.view().render("index")
+            }
+        })
+
+
+        
+        
             
 //            .flatMap({ (pInfo) -> EventLoopFuture<View> in
 //      return  pInfo.flatMap({ (ps) -> EventLoopFuture<View> in
@@ -216,7 +285,6 @@ public func routes(_ router: Router) throws {
 //
 //        })
 //      })
-        return view
         return SKPackage.query(on: req).all().flatMap({ (pgs) -> EventLoopFuture<View> in
             
            
@@ -260,5 +328,10 @@ extension Int {
         default:
             return ".txt"
         }
+    }
+}
+extension String{
+    var `int`: Int {
+        return Int(self)!
     }
 }
