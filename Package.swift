@@ -15,13 +15,13 @@ let package = Package(
         .package(url: "https://github.com/vapor/auth.git", from: "2.0.0"),
         /// mail Server
         .package(url: "https://github.com/IBM-Swift/Swift-SMTP.git", from: "4.0.1"),
-        .package(url: "https://github.com/qutheory/vapor-mustache.git", from: "0.11.0"),
+//        .package(url: "https://github.com/qutheory/vapor-mustache.git", from: "0.11.0"),
 //        git@github.com:skeyboy/SKSmtp.git
-       .package(url: "https://github.com/skeyboy/SKSmtp.git", from:"0.0.1"),
+       .package(url: "https://github.com/skeyboy/SKSmtp.git", from:"0.0.3"),
 
         ],
     targets: [
-        .target(name: "App", dependencies: ["FluentSQLite","Authentication","SwiftSMTP", "Vapor","Leaf","Multipart","VaporMustache","SKSmtp"]),
+        .target(name: "App", dependencies: ["FluentSQLite","Authentication","SwiftSMTP", "Vapor","Leaf","Multipart"/*,"VaporMustache"*/,"SKSmtp"]),
         .target(name: "Run", dependencies: ["App"]),
         .testTarget(name: "AppTests", dependencies: ["App"])
     ]

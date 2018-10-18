@@ -23,6 +23,7 @@ class SKUploadController {
     /// - Parameter req: <#req description#>
     /// - Returns: <#return value description#>
     public func upload( req: Request) -> EventLoopFuture<String>{
+        
         do{
             
             return try req.content.decode(Upload.self).flatMap { (u) -> EventLoopFuture<String> in

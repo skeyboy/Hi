@@ -41,7 +41,7 @@ final class SKUserController {
     public func regist(req: Request)throws-> EventLoopFuture<String>{
         
         let smtp: SKSmtp =  try req.make(SKSmtp.self)
-        smtp.send(<#T##mail: Mail##Mail#>, completion: <#T##((Error?) -> Void)?##((Error?) -> Void)?##(Error?) -> Void#>)
+//        smtp.send(<#T##mail: Mail##Mail#>, completion: <#T##((Error?) -> Void)?##((Error?) -> Void)?##(Error?) -> Void#>)
         struct InnerUser : Content {
             var name:String
             var code: String

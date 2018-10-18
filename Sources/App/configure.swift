@@ -70,7 +70,25 @@ public func configure(_ config: inout Config, _ env: inout Environment, _ servic
     migrations.add(model: SKPackageScribePivot.self, database: .sqlite)
     
     
+     
+    migrations.add(model:TComment.self, database: .sqlite);         migrations.add(model:TResource.self, database: .sqlite)
+    migrations.add(model:TUser.self, database: .sqlite)
+migrations.add(model: TTopic.self, database: .sqlite)
+    //以上为数据表创建
+    
+    
+    //数据库迁移 sqlite 一个类支持一个字段迁移【有点坑爹啊】
+    migrations.add(migration: TUserAddNickName.self, database: .sqlite)
+    migrations.add(migration: TUserAddNickPassword.self, database: .sqlite)
+migrations.add(migration: TTopicAddTopicName.self, database: .sqlite)
+    
     services.register(migrations)
+    
+    
+    
+    
+    
+    
     
     
     /// Leaf

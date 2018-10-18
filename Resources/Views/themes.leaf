@@ -1,0 +1,13 @@
+#set("body"){
+#for(item in topics){
+<div>
+<label>#(item.topic.topicName)</label>
+<label>#(item.owner.nickName)</label>
+#for(comment in item.comments){
+<label>#(comment.id)</label>
+}
+</div>
+}
+}
+#embed("base")
+

@@ -9,7 +9,7 @@ import CNIOOpenSSL
 
 public func routes(_ router: Router) throws {
     
-    
+    try theme_routes(router)
     
     // Basic "Hello, world!" example
     
@@ -184,43 +184,43 @@ public func routes(_ router: Router) throws {
 //        let packageId = try! req.parameters.values.first?.value
 let p = P(userId: userId, packageId: packageId)
         
-
-        let view =  SKPackage.query(on: req).all().flatMap({ (ps) -> EventLoopFuture<PInfoList> in
-
-            return  ps.map({ (p) -> EventLoopFuture<(SKPackage, SKUser?,[SKInstallPackage?])> in
-                return p.owner.query(on: req).first().flatMap({ (u) -> EventLoopFuture<(SKPackage, SKUser?)> in
-                    let resutl = req.eventLoop.newPromise((SKPackage, SKUser?).self)
-                    resutl.succeed(result: (p,u))
-                    return resutl.futureResult
-                }).flatMap({ (pk) -> EventLoopFuture<(SKPackage, SKUser?, [SKInstallPackage?])> in
-                    return try pk.0.packages.query(on: req).all().flatMap({ (pks) -> EventLoopFuture<(SKPackage, SKUser?, [SKInstallPackage?])> in
-                        let resutl = req.eventLoop.newPromise((SKPackage, SKUser?,[SKInstallPackage?]).self)
-                        resutl.succeed(result: (pk.0,pk.1, pks))
-                        return resutl.futureResult
-                    })
-                })
-            }).map({ (e) -> EventLoopFuture<PInfo> in
-
-                return e.map({ (value:(SKPackage, SKUser?, [SKInstallPackage?])) -> PInfo in
-
-                    let pInfo = PInfo(value.0, user: value.1, installs: value.2 as! [SKInstallPackage])
-
-
-                    return pInfo
-                })
-            }).flatten(on: req).flatMap({ (ps) -> EventLoopFuture<PInfoList> in
-                var pList = PInfoList(list: ps)
-                pList.title = "安装包查看"
-                let result  = req.eventLoop.newPromise(PInfoList.self)
-
-                result.succeed(result: pList)
-                return result.futureResult
-            })
-        }).flatMap({ (pList) -> EventLoopFuture<View> in
-            return try req.view().render("package.leaf", pList)
-        })
-        return view
-        
+//
+//        let view =  SKPackage.query(on: req).all().flatMap({ (ps) -> EventLoopFuture<PInfoList> in
+//
+//            return  ps.map({ (p) -> EventLoopFuture<(SKPackage, SKUser?,[SKInstallPackage?])> in
+//                return p.owner.query(on: req).first().flatMap({ (u) -> EventLoopFuture<(SKPackage, SKUser?)> in
+//                    let resutl = req.eventLoop.newPromise((SKPackage, SKUser?).self)
+//                    resutl.succeed(result: (p,u))
+//                    return resutl.futureResult
+//                }).flatMap({ (pk) -> EventLoopFuture<(SKPackage, SKUser?, [SKInstallPackage?])> in
+//                    return try pk.0.packages.query(on: req).all().flatMap({ (pks) -> EventLoopFuture<(SKPackage, SKUser?, [SKInstallPackage?])> in
+//                        let resutl = req.eventLoop.newPromise((SKPackage, SKUser?,[SKInstallPackage?]).self)
+//                        resutl.succeed(result: (pk.0,pk.1, pks))
+//                        return resutl.futureResult
+//                    })
+//                })
+//            }).map({ (e) -> EventLoopFuture<PInfo> in
+//
+//                return e.map({ (value:(SKPackage, SKUser?, [SKInstallPackage?])) -> PInfo in
+//
+//                    let pInfo = PInfo(value.0, user: value.1, installs: value.2 as! [SKInstallPackage])
+//
+//
+//                    return pInfo
+//                })
+//            }).flatten(on: req).flatMap({ (ps) -> EventLoopFuture<PInfoList> in
+//                var pList = PInfoList(list: ps)
+//                pList.title = "安装包查看"
+//                let result  = req.eventLoop.newPromise(PInfoList.self)
+//
+//                result.succeed(result: pList)
+//                return result.futureResult
+//            })
+//        }).flatMap({ (pList) -> EventLoopFuture<View> in
+//            return try req.view().render("package.leaf", pList)
+//        })
+//        return view
+//        
 
 
         return    SKPackageScribePivot.query(on: req).group(SQLiteBinaryOperator.or, closure: { (or) in
