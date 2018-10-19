@@ -1,13 +1,62 @@
 #set("body"){
 #for(item in topics){
-<div>
-<label>#(item.topic.topicName)</label>
-<label>#(item.owner.nickName)</label>
+
+<br>
+<br>
+<div class="topic">
+<div class="user">
+<label> 主题内容 :#(item.topic.topicName)#(item.topic.id)</label>
+<label>版主：#(item.owner.nickName)</label>
+</div>
 #for(comment in item.comments){
-<label>#(comment.id)</label>
+<div>
+<div >
+<ul>
+<li>
+<div>
+#//<label>#(comment.comment.id)</label>
+#if(  comment.comment.aboutId == item.topic.id && comment.comment.type == 0 ){
+<label>评论人#(comment.comment.ownerId) @ 楼主</label>
+<label>#(comment.comment.content)</label>
+}else {
+<label>评论人#(comment.comment.ownerId) @ #(comment.comment.aboutId)</label>
+<label>#(comment.comment.content)</label>
 }
+
+<div>
+子评论数:#count(comment.subComments)
+#for(sub in comment.subComments){
+<div>
+<label>评论人#(sub.ownerId) @ #(sub.comment.aboutId)---#(sub.comment.content)</label>
 </div>
 }
+
+</div>
+</div>
+</li>
+</ul>
+</div>
+</div>
+<div>
+
+
+</div>
+</div>
+
+
+}
+
+}
+}
+#set("style"){
+<style type="text/css">
+div {
+display: flex;
+flex-direction: column;
+border: 1px saddlebrown dot-dash;
+
+}
+</style>
 }
 #embed("base")
 

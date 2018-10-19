@@ -24,15 +24,15 @@ extension TRespData: Content{}
 
 
 func theme_routes(_ router: Router) throws -> Void {
-let v1 = router.grouped("api","v1")
-    
+    let v1 = router.grouped("api","v1")
+    //用户注册
     v1.get("regist","nickname",String.parameter, "password", String.parameter) { (req) -> EventLoopFuture<TResponse<TRespData<String>> > in
         
         let nickName: String = try! req.parameters.next(String.self)
         let password: String = try! req.parameters.next(String.self)
-      return  req.transaction(on: .sqlite, { (conn) -> EventLoopFuture<TResponse<TRespData<String>>> in
-        
-        return TUser.query(on: req).filter(\.nickName, .equal, nickName).first().flatMap({ (u) -> EventLoopFuture<TRespData<String>> in
+        return  req.transaction(on: .sqlite, { (conn) -> EventLoopFuture<TResponse<TRespData<String>>> in
+            
+            return TUser.query(on: req).filter(\.nickName, .equal, nickName).first().flatMap({ (u) -> EventLoopFuture<TRespData<String>> in
                 
                 if u != nil {
                     let result = req.eventLoop.newPromise(TRespData<String>.self)
@@ -51,26 +51,29 @@ let v1 = router.grouped("api","v1")
                         })
                 }
                 
-        }).flatMap({ (d) -> EventLoopFuture<TResponse<TRespData<String>>> in
-          let value =  TResponse<TRespData<String>>.init(code: d.code, msg: "", data: d)
-            let result = req.eventLoop.newPromise(TResponse<TRespData<String>>.self)
-//            let smtp: SKSmtp = try! req.make(SKSmtp.self)
-            
-            
-            result.succeed(result: value)
-            return result.futureResult
+            }).flatMap({ (d) -> EventLoopFuture<TResponse<TRespData<String>>> in
+                let value =  TResponse<TRespData<String>>.init(code: d.code, msg: "", data: d)
+                let result = req.eventLoop.newPromise(TResponse<TRespData<String>>.self)
+                //            let smtp: SKSmtp = try! req.make(SKSmtp.self)
+                
+                
+                result.succeed(result: value)
+                return result.futureResult
+                
+            })
             
         })
         
-        })
        
-        
-//        return "\(try! req.parameters.next(String.self))" + "\(try! req.parameters.next(String.self))"
     }
     struct TU: Content {
         var topic: TTopic
         var owner: TUser
-        var comments: [TComment]?
+        var comments: [TUC]?
+    }
+    struct TUC: Content {
+        var comment: TComment?
+        var subComments: [TUC]?
     }
     struct TResult: Content{
         var topics: [TU] = [TU]()
@@ -78,50 +81,67 @@ let v1 = router.grouped("api","v1")
             
         }
     }
+    //查看所有主题和评论
     v1.get("a") { (req) -> EventLoopFuture<View> in
         
-     return   TTopic.query(on: req).all().flatMap({ (ts) -> EventLoopFuture<[(TTopic, TUser)]> in
+        return   TTopic.query(on: req).all().flatMap({ (ts) -> EventLoopFuture<[(TTopic, TUser)]> in
             
             let value: [EventLoopFuture<(TTopic, TUser)>] = ts.map({ (t: TTopic) -> EventLoopFuture<(TTopic, TUser)> in
                 
-              return  t.owner.query(on: req).first().flatMap({ (u) -> EventLoopFuture<(TTopic, TUser)> in
+                return  t.owner.query(on: req).first().flatMap({ (u) -> EventLoopFuture<(TTopic, TUser)> in
                     let result = req.eventLoop.newPromise((TTopic, TUser).self)
-                result.succeed(result: (t, u!))
+                    result.succeed(result: (t, u!))
                     return result.futureResult
                 })
             })
             
-           return value.flatten(on: req)
-        }).flatMap({ (tus:[(TTopic, TUser)]) -> EventLoopFuture<[(TTopic, TUser, [TComment]?)]> in
-         
-            let values = tus.map({ (tu:(TTopic, TUser)) -> EventLoopFuture<(TTopic, TUser, [TComment]?)> in
+            return value.flatten(on: req)
+        }).flatMap({ (tus:[(TTopic, TUser)]) -> EventLoopFuture<[(TTopic, TUser, [TUC])]> in
+            
+            let values = tus.map({ (tu:(TTopic, TUser)) -> EventLoopFuture<(TTopic, TUser, [TUC])> in
                 
-             return  try!  tu.0.comments.query(on: req).all().flatMap({ (comments:[TComment]) -> EventLoopFuture<(TTopic, TUser, [TComment]?)> in
+                return  try!  tu.0.comments.query(on: req).all().flatMap({ (comments:[TComment]) -> EventLoopFuture<(TTopic, TUser, [TUC])> in
                     
-                    let result = req.eventLoop.newPromise((TTopic, TUser, [TComment]?).self)
-                    result.succeed(result: (tu.0, tu.1, comments))
-                    return result.futureResult
+                    
+                    let tucs:[EventLoopFuture<TUC>]  =  comments.map({ (tc) -> EventLoopFuture<TUC> in
+                        
+                        return   TComment.query(on: req).filter(\TComment.aboutId, .equal, tc.id!).all()
+                            .flatMap({ (tcs:[TComment]) ->
+                                EventLoopFuture<TUC> in
+                                
+                                let tuc: TUC = TUC.init(comment: tc, subComments: tcs.map({ (tc) -> TUC in
+                                    return TUC.init(comment: tc, subComments: nil)
+                                }))
+                                let result = req.eventLoop.newPromise(TUC.self)
+                                
+                                result.succeed(result: tuc)
+                                return result.futureResult
+                            })
+                        
+                    })
+                    return  tucs.flatten(on: req).flatMap({ (tucList:[TUC]) -> EventLoopFuture<(TTopic, TUser, [TUC])> in
+                        let result = req.eventLoop.newPromise((TTopic, TUser, [TUC]).self)
+                        
+                        result.succeed(result: (tu.0, tu.1, tucList))
+                        return result.futureResult
+                    })
                 })
                 
             })
-            
+  
             return values.flatten(on: req)
             
-        }).flatMap({ (items:[(TTopic, TUser, [TComment]?)]) -> EventLoopFuture<View> in
+        }).flatMap({ (items:[(TTopic, TUser, [TUC])]) -> EventLoopFuture<View> in
             
             var tResult = TResult()
-
-            items.forEach({ (value:(TTopic, TUser, [TComment]?)) in
-             let tu =  TU(topic: value.0, owner: value.1, comments: value.2)
+            
+            items.forEach({ (value:(TTopic, TUser, [TUC])) in
+                let tu =  TU(topic: value.0, owner: value.1, comments: value.2)
                 tResult.topics.append(tu)
             })
             
             return  try req.view().render("themes", tResult)
-            
         })
-        
-//        return ""
-        
     }
     struct Theme: Content {
         var topic: String
@@ -139,10 +159,11 @@ let v1 = router.grouped("api","v1")
         var topocs: TTopic
         var comments: [TComment]
     }
+    //创建主题
     v1.get("theme/create") { (req) -> EventLoopFuture<View>  in
         
         let theme = try! req.query.decode(Theme.self)
-
+        
         return TTopic.init(name: theme.topic, userId: theme.userId).create(on: req).then({ (t) -> EventLoopFuture<Ts> in
             
             return  TTopic.query(on: req).all().flatMap({ (topics) -> EventLoopFuture<Ts> in
@@ -153,27 +174,29 @@ let v1 = router.grouped("api","v1")
             })
             
         }).flatMap({ (ts) -> EventLoopFuture<View> in
-            
-            
-//        let value =    ts.topics.map({ (t:TTopic) -> EventLoopFuture<View> in
-//                
-//                return try! t.comments.query(on: req).all().flatMap({ (tc) -> EventLoopFuture<Tc> in
-//                    let result = req.eventLoop.newPromise(Tc.self)
-//                    result.succeed(result: Tc(topocs: t, comments: tc))
-//                    return result.futureResult
-//                })
-//            })
-            
-//            let result = req.eventLoop.newPromise([EventLoopFuture<Tc> ].self)
-//            result.succeed(result: value)
-            
-//            return result.futureResult
             return try! req.view().render("theme", ts)
         })
-//        req.view().render("theme", <#T##context: Encodable##Encodable#>)
-//        return ""
-       
-//        return "\(theme)"
+        
+    }
+    
+    
+    
+    v1.get("theme/comment") { (req) -> EventLoopFuture<TComment> in
+        
+        struct TopicComment : Content {
+            var fromId: Int
+            var toId: Int
+            var content: String
+            var type: TCommentType
+        }
+        let topicComment:TopicComment = try! req.query.decode(TopicComment.self)
+        
+        return  TComment.init(aboutId: topicComment.toId, ownerId: topicComment.fromId, type: topicComment.type, content: topicComment.content).create(on: req).flatMap({ (comment) -> EventLoopFuture<TComment> in
+            let result = req.eventLoop.newPromise(TComment.self)
+            result.succeed(result: comment)
+            return result.futureResult
+        })
+        //        return ""
     }
 }
 

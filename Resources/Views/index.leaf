@@ -45,7 +45,20 @@ email<input type="text" name="email"><br>
 </label>
 <button type="submit">创建主题</button>
 </form>
+<br>
+<br>
 
+//主题评论
+<form action="api/v1/theme/comment">
+<div>
+<input name="fromId" placeholder="输入您的ID">
+<input name="toId" placeholder="被评论的主题ID">
+<input name="type" placeholder="类型0 主题 1 回复评论">
+
+<input name="content" placeholder="评论的内容">
+<button type="submit">评论</button>
+</div>
+</form>
 
 }
 

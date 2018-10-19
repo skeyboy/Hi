@@ -1,0 +1,8 @@
+#set("body"){
+#for(topic in topics){
+<div>
+<label>#(topic.topicName)</label>
+</div>
+}
+}
+#embed("base")

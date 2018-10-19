@@ -81,7 +81,7 @@ migrations.add(model: TTopic.self, database: .sqlite)
     migrations.add(migration: TUserAddNickName.self, database: .sqlite)
     migrations.add(migration: TUserAddNickPassword.self, database: .sqlite)
 migrations.add(migration: TTopicAddTopicName.self, database: .sqlite)
-    
+    migrations.add(migration: TCommentAddContent.self, database: .sqlite)
     services.register(migrations)
     
     

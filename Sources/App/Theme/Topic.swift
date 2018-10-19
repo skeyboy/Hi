@@ -14,10 +14,12 @@ import SQLite
 ///
 /// - topic: 评论是关于主题发布的
 /// - user: 用户之间的相互评论
+/// - user: 用户之间的相互评论
 /// - pic: 对内部的资源发表意见
 enum TCommentType: Int{
     case topic
     case user
+    case comment
     case pic
 }
 extension TCommentType: Codable{}
@@ -54,13 +56,30 @@ struct TTopicAddTopicName: SQLiteModel , SQLiteMigration{
 }
 
 /// 用户发表的评论
-struct TComment: SQLiteModel {
+struct TComment: SQLiteModel, Content {
     var id: Int?
     var type: TCommentType
     /// 关于XX的评论
     var aboutId: Int
+    
+    //发表的文字内容
+    var content: String
     //发表人
     var ownerId: Int
+    init(aboutId: Int, ownerId: Int, type: TCommentType, content: String) {
+        self.aboutId = aboutId
+        self.ownerId  = ownerId
+        self.content = content
+        self.type = type
+    }
+    //评论评论
+    init(commentId: Int, ownerId: Int,  content: String) {
+        self.init(aboutId: commentId, ownerId: ownerId, type: TCommentType.comment, content: content)
+    }
+    //话题评论
+    init(topicId: Int, ownerId: Int,  content: String) {
+        self.init(aboutId: topicId, ownerId: ownerId, type: TCommentType.topic, content: content)
+    }
 }
 
 /// 主题 和 评论 1：n
@@ -113,6 +132,24 @@ extension TUser{
     }
     var topics: Children<TUser, TTopic>{
         return children(\.ownerId)
+    }
+}
+struct TCommentAddContent: SQLiteModel, SQLiteMigration {
+    var id: Int?
+    static func prepare(on conn: SQLiteConnection) -> Future<Void>{
+        
+        return SQLiteDatabase.update(TComment.self, on: conn, closure: { (builder) in
+            let defaultValueConstraint = SQLiteColumnConstraint.default(GenericSQLExpression<SQLiteLiteral, SQLiteBind, SQLiteColumnIdentifier, SQLiteBinaryOperator, SQLiteFunction, SQLiteQuery>._literal(""))
+            builder.field(for: \.content, type: SQLiteDataType.text, defaultValueConstraint)
+        })
+    }
+    
+    static func revert(on conn: SQLiteConnection) -> EventLoopFuture<Void> {
+        let resut =  conn.eventLoop.newPromise(Void.self)
+        
+        resut.succeed()
+        return resut.futureResult
+        
     }
 }
 struct TUserAddNickName: SQLiteModel, SQLiteMigration {
