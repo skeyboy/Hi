@@ -10,7 +10,7 @@ import CNIOOpenSSL
 public func routes(_ router: Router) throws {
     
     try theme_routes(router)
-    
+    try web_routes(router)
     // Basic "Hello, world!" example
     
     router.get("hello") { req in

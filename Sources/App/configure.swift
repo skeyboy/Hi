@@ -14,6 +14,8 @@ public func configure(_ config: inout Config, _ env: inout Environment, _ servic
     
     //configure.swift  func configure
     var nioServerConfig = NIOServerConfig.default()
+//    nioServerConfig.hostname = "192.168.1.103"
+//    nioServerConfig.hostname = "::1"
     //修改为 100 MB
     nioServerConfig.maxBodySize = 100 * 1024 * 1024
     services.register(nioServerConfig)
@@ -36,7 +38,7 @@ public func configure(_ config: inout Config, _ env: inout Environment, _ servic
     var middlewares = MiddlewareConfig() // Create _empty_ middleware config
     middlewares.use(FileMiddleware.self) // Serves files from `Public/` directory
     middlewares.use(ErrorMiddleware.self) // Catches errors and converts to HTTP response
-    try services.register(SessionsMiddleware.self)
+     services.register(SessionsMiddleware.self)
     
     
     
@@ -74,17 +76,18 @@ public func configure(_ config: inout Config, _ env: inout Environment, _ servic
     migrations.add(model:TComment.self, database: .sqlite);         migrations.add(model:TResource.self, database: .sqlite)
     migrations.add(model:TUser.self, database: .sqlite)
 migrations.add(model: TTopic.self, database: .sqlite)
+    migrations.add(model: TTResource.self, database: .sqlite)
     //以上为数据表创建
     
     
     //数据库迁移 sqlite 一个类支持一个字段迁移【有点坑爹啊】
-    migrations.add(migration: TUserAddNickName.self, database: .sqlite)
-    migrations.add(migration: TUserAddNickPassword.self, database: .sqlite)
-migrations.add(migration: TTopicAddTopicName.self, database: .sqlite)
-    migrations.add(migration: TCommentAddContent.self, database: .sqlite)
+//    migrations.add(migration: TUserAddNickName.self, database: .sqlite)
+//    migrations.add(migration: TUserAddNickPassword.self, database: .sqlite)
+//migrations.add(migration: TTopicAddTopicName.self, database: .sqlite)
+//    migrations.add(migration: TCommentAddContent.self, database: .sqlite)
     services.register(migrations)
     
-    
+    try services.register(AuthenticationProvider())
     
     
     

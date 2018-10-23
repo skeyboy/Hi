@@ -34,7 +34,8 @@ email<input type="text" name="email"><br>
 
 <br>
 <br>
-<form method="get" action="api/v1/theme/create">
+
+<form  method="POST" enctype="multipart/form-data"  action="api/v1/theme/create">
 <label>
 主题：
 <input id="topic" name="topic" placeholder="输入主题名称">
@@ -43,23 +44,45 @@ email<input type="text" name="email"><br>
 创建人：
 <input id="userId" name="userId" placeholder="输入创建人">
 </label>
+<input name="file1" type="file" placeholder="输入您的ID">
+<input name="file2" type="file" placeholder="输入您的ID">
 <button type="submit">创建主题</button>
 </form>
+
 <br>
 <br>
 
 //主题评论
-<form action="api/v1/theme/comment">
+<form action="api/v1/theme/comment" method="POST" enctype="multipart/form-data"  >
 <div>
 <input name="fromId" placeholder="输入您的ID">
-<input name="toId" placeholder="被评论的主题ID">
+<input name="toId" placeholder="被评论的ID">
+<input name="attatchId" placeholder="被评论的上一级ID">
+
 <input name="type" placeholder="类型0 主题 1 回复评论">
 
 <input name="content" placeholder="评论的内容">
+<input name="file1" type="file" placeholder="输入您的ID">
+<input name="file2" type="file" placeholder="输入您的ID">
+
 <button type="submit">评论</button>
 </div>
 </form>
 
+
+
+
+//多图片
+
+
+<form method="POST" enctype="multipart/form-data" action="api/v1/double"  >
+<div>
+<input name="file1" type="file" placeholder="输入您的ID">
+<input name="file2" type="file" placeholder="输入您的ID">
+
+<button type="submit">评论</button>
+</div>
+</form>
 }
 
 #embed("base")

@@ -1,8 +1,12 @@
 #set("body"){
+
 #for(topic in topics){
 <div>
 <label>#(topic.topicName)</label>
 </div>
+}
+#for(res in resources){
+<img width="20px"  src="/#(res.pic)" />
 }
 }
 #embed("base")

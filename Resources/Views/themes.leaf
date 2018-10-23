@@ -1,62 +1,98 @@
 #set("body"){
 #for(item in topics){
-
-<br>
-<br>
+<div>
 <div class="topic">
+<h3 style="text-align: center">#(item.topic.topicName)</h3>
+<!--内容和主题-->
 <div class="user">
-<label> 主题内容 :#(item.topic.topicName)#(item.topic.id)</label>
-<label>版主：#(item.owner.nickName)</label>
+<img src="https://ss1.baidu.com/6ONXsjip0QIZ8tyhnq/it/u=2103525049,1947288652&fm=173&app=25&f=JPEG?w=502&h=330&s=37121BCBC6CA01578848B52203006091">
+<div>
+<label>作者：#(item.owner.nickName)<label>&nbsp;3分钟前</label></label>
+<div class="topic info">
+
+<label>阅读：222</label>
+<label>评论数：222</label>
+<label>喜欢：1</label>
+<label>赞赏：1</label>
 </div>
+</div>
+</div>
+<label class="content">content</label></div>
+<div class="col-xs-6 col-md-3" style="display: flex; flex-direction: row; justify-items: center; align-items: center">
+#for(res in item.resources){
+
+<a href=/#(res.pic) class="thumbnail">
+<img style="height: auto; width: 100%; display: block;" src=/#(res.pic) >
+</a>
+
+}
+</div>
+
+<br>
+
+<label>评论：</label>
+
+<div class="comments">
+
+
+
+
 #for(comment in item.comments){
-<div>
-<div >
-<ul>
-<li>
-<div>
-#//<label>#(comment.comment.id)</label>
-#if(  comment.comment.aboutId == item.topic.id && comment.comment.type == 0 ){
-<label>评论人#(comment.comment.ownerId) @ 楼主</label>
-<label>#(comment.comment.content)</label>
-}else {
-<label>评论人#(comment.comment.ownerId) @ #(comment.comment.aboutId)</label>
-<label>#(comment.comment.content)</label>
-}
+<div class="comment-item">
 
 <div>
-子评论数:#count(comment.subComments)
+<div class="user">
+<img src="https://ss1.baidu.com/6ONXsjip0QIZ8tyhnq/it/u=2103525049,1947288652&fm=173&app=25&f=JPEG?w=502&h=330&s=37121BCBC6CA01578848B52203006091">
+<div>
+<label>#(comment.comment.id)作者:#(comment.comment.ownerId)</label>
+<label>发布时间：3分钟前</label>
+</div>
+</div>
+<label class="content">#(comment.comment.content)</label>
+</div>
+#if(comment.subComments){
+<span>子评论:<span class="badge">#count(comment.subComments)</span></span>
+<div class="comment-item-sub">
+
 #for(sub in comment.subComments){
+
 <div>
-<label>评论人#(sub.ownerId) @ #(sub.comment.aboutId)---#(sub.comment.content)</label>
-</div>
-}
-
-</div>
-</div>
-</li>
-</ul>
-</div>
-</div>
+<div class="user">
+<img src="https://ss1.baidu.com/6ONXsjip0QIZ8tyhnq/it/u=2103525049,1947288652&fm=173&app=25&f=JPEG?w=502&h=330&s=37121BCBC6CA01578848B52203006091">
 <div>
+<label>#(comment.comment.id)作者:#(sub.comment.id)</label>
+<label>发布时间：3分钟前</label>
+</div>
+</div>
+<label class="content"><label>#(sub.comment.aboutId)@#(sub.comment.attatchId)</label>#(sub.comment.content)
+
+</label>
+
+#if(sub.subComments){
+
+<div class="comment-item-sub foot" style="justify-content: flex-start">
+
+<a><label>查看更多>></label></a>
+</div>
+}
+
+</div>
+}
+
+</div>
+<div class="comment-item-sub foot">
+<a><label>查看更多>></label></a>
+</div>
+}
+
+</div>
+}
+</div>
 
 
 </div>
-</div>
-
-
+}
 }
 
-}
-}
-#set("style"){
-<style type="text/css">
-div {
-display: flex;
-flex-direction: column;
-border: 1px saddlebrown dot-dash;
-
-}
-</style>
-}
 #embed("base")
 

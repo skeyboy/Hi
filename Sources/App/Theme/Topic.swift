@@ -9,7 +9,7 @@ import Foundation
 import FluentSQLite
 import Vapor
 import SQLite
-
+import Authentication
 /// 每条评论都有一个类型用于区分评论的用途
 ///
 /// - topic: 评论是关于主题发布的
@@ -21,6 +21,18 @@ enum TCommentType: Int{
     case user
     case comment
     case pic
+}
+extension TCommentType: ReflectionDecodable{
+    static func reflectDecoded() throws -> (TCommentType, TCommentType) {
+        return (.topic, .user)
+    }
+    
+    
+    static func reflectDecoded() throws -> (TCommentType, TCommentType, TCommentType, TCommentType) {
+         return (.topic, .user, .comment, .pic)
+    }
+    
+    
 }
 extension TCommentType: Codable{}
 
@@ -34,6 +46,34 @@ struct TTopic: SQLiteModel {
         self.ownerId = creater
     }
 }
+struct TTResource: SQLiteModel {
+    var id: Int?
+    var pic:String
+    var createrId: Int
+    var topicId: Int
+    init(pic:String, creater:Int, topic: Int) {
+        self.pic = pic
+        self.createrId = creater
+        self.topicId = topic
+    }
+}
+
+extension TTopic{
+    var resources:Children<TTopic, TTResource>{
+        return children(\.topicId)
+    }
+}
+extension TTResource{
+    var topic: Parent<TTResource, TTopic>{
+        return parent(\.topicId)
+    }
+    var creater: Parent<TTResource, TUser>{
+        return parent(\.createrId)
+    }
+}
+extension TTResource: SQLiteMigration{}
+extension TTResource: Content{}
+
 
 struct TTopicAddTopicName: SQLiteModel , SQLiteMigration{
     var id: Int?
@@ -58,23 +98,27 @@ struct TTopicAddTopicName: SQLiteModel , SQLiteMigration{
 /// 用户发表的评论
 struct TComment: SQLiteModel, Content {
     var id: Int?
-    var type: TCommentType
+    var type: Int
     /// 关于XX的评论
     var aboutId: Int
+    //默认是 0代表对话题的评论（对楼主的评论） 非0代表这个是一个针对 Topic下的一个Comment的评论
+    var attatchId: Int = 0
     
     //发表的文字内容
     var content: String
     //发表人
     var ownerId: Int
-    init(aboutId: Int, ownerId: Int, type: TCommentType, content: String) {
+    init(aboutId: Int, ownerId: Int, type: TCommentType, content: String, attachId: Int = 0) {
         self.aboutId = aboutId
         self.ownerId  = ownerId
         self.content = content
-        self.type = type
+        self.type = type.rawValue
+        self.attatchId = attachId
     }
     //评论评论
-    init(commentId: Int, ownerId: Int,  content: String) {
-        self.init(aboutId: commentId, ownerId: ownerId, type: TCommentType.comment, content: content)
+    init(commentId: Int, ownerId: Int, attatchId:Int,  content: String) {
+        self.init(aboutId: commentId, ownerId: ownerId, type: TCommentType.comment, content: content, attachId:attatchId)
+        
     }
     //话题评论
     init(topicId: Int, ownerId: Int,  content: String) {
@@ -92,6 +136,17 @@ struct TUser: SQLiteModel {
     var id: Int?
     var nickName: String
     var password: String
+}
+extension TUser: PasswordAuthenticatable{
+    static var usernameKey: WritableKeyPath<TUser, String> {
+        return \.nickName
+    }
+    
+    static var passwordKey: WritableKeyPath<TUser, String> {
+        return \.password
+    }
+    
+    
 }
 
 struct TResource : SQLiteModel  {
