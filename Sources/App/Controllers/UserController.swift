@@ -79,7 +79,7 @@ final class SKUserController {
                 
                 let skUser: SKUser = SKUser.init(name: innerUser.name
                     , email: innerUser.email
-                    , password: innerUser.password)
+                    , password: try BCrypt.hash(innerUser.password))
                 
                 return  SKUser.query(on: req).group(SQLiteBinaryOperator.or, closure: { (or) in
                     //查询邮箱是否被注册过

@@ -15,7 +15,7 @@ public func configure(_ config: inout Config, _ env: inout Environment, _ servic
     //configure.swift  func configure
     var nioServerConfig = NIOServerConfig.default()
 //    nioServerConfig.hostname = "192.168.1.103"
-//    nioServerConfig.hostname = "::1"
+    nioServerConfig.hostname = "0.0.0.0"
     //修改为 100 MB
     nioServerConfig.maxBodySize = 100 * 1024 * 1024
     services.register(nioServerConfig)
@@ -29,9 +29,11 @@ public func configure(_ config: inout Config, _ env: inout Environment, _ servic
     let router = EngineRouter.default()
     try routes(router)
     try sql_routes(router)
+    
+    try token_routes(router)
     services.register(router, as: Router.self)
     
-    
+    try services.register(AuthenticationProvider())
     config.prefer(MemoryKeyedCache.self, for: KeyedCache.self)
     
     /// Register middleware
@@ -39,7 +41,6 @@ public func configure(_ config: inout Config, _ env: inout Environment, _ servic
     middlewares.use(FileMiddleware.self) // Serves files from `Public/` directory
     middlewares.use(ErrorMiddleware.self) // Catches errors and converts to HTTP response
      services.register(SessionsMiddleware.self)
-    
     
     
     services.register(middlewares)
