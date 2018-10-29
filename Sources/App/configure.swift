@@ -16,6 +16,7 @@ public func configure(_ config: inout Config, _ env: inout Environment, _ servic
     var nioServerConfig = NIOServerConfig.default()
 //    nioServerConfig.hostname = "192.168.1.103"
     nioServerConfig.hostname = "0.0.0.0"
+     nioServerConfig.port = 544
     //修改为 100 MB
     nioServerConfig.maxBodySize = 100 * 1024 * 1024
     services.register(nioServerConfig)
